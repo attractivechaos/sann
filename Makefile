@@ -2,7 +2,7 @@ CC=			gcc
 CFLAGS=		-g -Wall -Wc++-compat -Wno-unused-function -O2
 CPPFLAGS=
 INCLUDES=	-I.
-OBJS=		math.o sae_core.o smln_core.o train.o io.o sae_misc.o
+OBJS=		math.o sae_core.o smln_core.o sann.o data.o
 PROG=		sann
 LIBS=		-lm -lz -lpthread
 
@@ -23,3 +23,11 @@ depend:
 		(LC_ALL=C; export LC_ALL; makedepend -Y -- $(CFLAGS) $(DFLAGS) -- *.c)
 
 # DO NOT DELETE
+
+cli.o: sann.h
+data.o: sann.h kseq.h
+math.o: sann.h priv.h
+sae_core.o: sann.h priv.h ksort.h
+sae_misc.o: sann.h
+sann.o: priv.h sann.h
+smln_core.o: sann.h priv.h

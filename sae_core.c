@@ -95,33 +95,3 @@ void sae_core_randpar(int n_in, int n_hidden, float *t, int scaled)
 			t[i] = sann_normal(&iset, &gset) / sqrt(t[i]);
 	}
 }
-
-sae_t *sae_init(int n_in, int n_hidden, int scaled)
-{
-	sae_t *m;
-	m = (sae_t*)calloc(1, sizeof(sae_t));
-	m->n_in = n_in, m->n_hidden = n_hidden, m->k_sparse = -1;
-	m->f1 = SANN_AF_SIGM;
-	m->scaled = scaled;
-	m->t = (float*)calloc(sae_n_par(n_in, n_hidden), sizeof(float));
-	sae_core_randpar(n_in, n_hidden, m->t, scaled);
-	return m;
-}
-
-void sae_destroy(sae_t *m)
-{
-	free(m->t); free(m);
-}
-
-float sae_run(const sae_t *m, const float *x, float *z, float *y)
-{
-	int i;
-	float *deriv1;
-	double cost;
-	deriv1 = (float*)calloc(m->n_hidden, sizeof(float));
-	sae_core_forward(m->n_in, m->n_hidden, m->t, sann_get_af(m->f1), sann_sigm, m->k_sparse, x, z, y, deriv1, m->scaled);
-	for (cost = 0., i = 0; i < m->n_in; ++i)
-		cost += sann_sigm_cost(x[i], y[i]);
-	free(deriv1);
-	return (float)(cost / m->n_in);
-}

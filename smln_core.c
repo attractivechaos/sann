@@ -113,33 +113,3 @@ void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t)
 	}
 	free(b); free(w);
 }
-
-smln_t *smln_init(int n_layers, const int *n_neurons)
-{
-	int i;
-	smln_t *m;
-	m = (smln_t*)calloc(1, sizeof(smln_t));
-	m->n_layers = n_layers;
-	m->n_neurons = (int32_t*)calloc(n_layers, 4);
-	for (i = 0; i < n_layers; ++i) m->n_neurons[i] = n_neurons[i];
-	m->af = (int32_t*)calloc(n_layers - 1, 4);
-	for (i = 0; i < n_layers - 2; ++i) m->af[i] = SANN_AF_RECLIN;
-	m->af[i] = SANN_AF_SIGM;
-	m->t = (float*)calloc(smln_n_par(m->n_layers, m->n_neurons), sizeof(float));
-	smln_core_randpar(m->n_layers, m->n_neurons, m->t);
-	return m;
-}
-
-void smln_destroy(smln_t *m)
-{
-	free(m->n_neurons); free(m->af); free(m->t); free(m);
-}
-
-void smln_run(const smln_t *m, const float *x, float *y)
-{
-	smln_buf_t *b;
-	b = smln_buf_init(m->n_layers, m->n_neurons, m->t);
-	smln_core_forward(m->n_layers, m->n_neurons, m->af, m->t, x, b);
-	memcpy(y, b->out[m->n_layers-1], m->n_neurons[m->n_layers-1] * sizeof(float));
-	smln_buf_destroy(b);
-}
