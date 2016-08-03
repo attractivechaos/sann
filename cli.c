@@ -176,7 +176,7 @@ int main_view(int argc, char *argv[])
 	while ((c = getopt(argc, argv, "")) >= 0) {
 	}
 	if (argc == optind) {
-		fprintf(stderr, "Usage: sann view [options] <model.sae>\n");
+		fprintf(stderr, "Usage: sann view [options] <model.san>\n");
 		return 1;
 	}
 	m = sann_restore(argv[optind], &col_names);
@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
 	_MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO));
 	liftrlimit();
 	if (argc == 1) {
-		fprintf(stderr, "Usage: sae <command> <arguments>\n");
+		fprintf(stderr, "Usage: sann <command> <arguments>\n");
 		fprintf(stderr, "Commands:\n");
 		fprintf(stderr, "  train      train the autoencoder\n");
 		fprintf(stderr, "  apply      apply the model\n");

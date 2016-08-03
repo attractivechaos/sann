@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r41"
+#define SAE_VERSION "r2"
 
 #include <stdint.h>
 
@@ -49,8 +49,6 @@ void sann_destroy(sann_t *m);
 float sann_apply(const sann_t *m, const float *x, float *y, float *z);
 int sann_dump(const char *fn, const sann_t *m, char *const* col_names);
 sann_t *sann_restore(const char *fn, char ***col_names);
-
-int smln_n_par(int n_layers, const int32_t *n_neurons);
 
 void sann_tconf_init(sann_tconf_t *t, int malgo);
 float sann_train(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y);
