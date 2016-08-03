@@ -2,7 +2,7 @@ CC=			gcc
 CFLAGS=		-g -Wall -Wc++-compat -Wno-unused-function -O2
 CPPFLAGS=
 INCLUDES=	-I.
-OBJS=		math.o sae_core.o smln_core.o sann.o data.o
+OBJS=		math.o sae.o smln.o sann.o data.o
 PROG=		sann
 LIBS=		-lm -lz -lpthread
 
@@ -27,7 +27,6 @@ depend:
 cli.o: sann.h
 data.o: sann.h kseq.h
 math.o: sann.h priv.h
-sae_core.o: sann.h priv.h ksort.h
-sae_misc.o: sann.h
+sae.o: sann.h priv.h ksort.h
 sann.o: priv.h sann.h
-smln_core.o: sann.h priv.h
+smln.o: sann.h priv.h
