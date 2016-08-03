@@ -13,8 +13,11 @@ LIBS=		-lm -lz -lpthread
 
 all:$(PROG)
 
-sann:$(OBJS) cli.o
-		$(CC) $(CFLAGS) $^  -o $@ $(LIBS)
+sann:cli.o libsann.a
+		$(CC) $(CFLAGS) $< -o $@ -L. -lsann $(LIBS)
+
+libsann.a:$(OBJS)
+		$(AR) -csru $@ $(OBJS)
 
 clean:
 		rm -fr gmon.out *.o a.out $(PROG) $(PROG_EXTRA) *~ *.a *.dSYM session*
