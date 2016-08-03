@@ -221,8 +221,8 @@ int sann_dump(const char *fn, const sann_t *m, char *const* col_names)
 	fwrite(&m->k_sparse, 4, 1, fp);
 	fwrite(&m->scaled, 4, 1, fp);
 	fwrite(&m->n_layers, 4, 1, fp);
-	fwrite(&m->n_neurons, 4, m->n_layers, fp);
-	fwrite(&m->af, 4, m->n_layers - 1, fp);
+	fwrite(m->n_neurons, 4, m->n_layers, fp);
+	fwrite(m->af, 4, m->n_layers - 1, fp);
 	fwrite(m->t, sizeof(float), n_par, fp);
 	if (col_names) {
 		uint64_t tot_len = 0;
@@ -255,8 +255,8 @@ sann_t *sann_restore(const char *fn, char ***col_names)
 	fread(&m->n_layers, 4, 1, fp);
 	m->n_neurons = (int32_t*)calloc(m->n_layers, 4);
 	m->af = (int32_t*)calloc(m->n_layers - 1, 4);
-	fread(&m->n_neurons, 4, m->n_layers, fp);
-	fread(&m->af, 4, m->n_layers - 1, fp);
+	fread(m->n_neurons, 4, m->n_layers, fp);
+	fread(m->af, 4, m->n_layers - 1, fp);
 	n_par = sann_n_par(m);
 	m->t = (float*)malloc(n_par * sizeof(float));
 	fread(m->t, sizeof(float), n_par, fp);
