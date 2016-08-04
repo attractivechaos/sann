@@ -6,6 +6,8 @@
 #include "priv.h"
 #include "sann.h"
 
+int sann_verbose = 3;
+
 #define sae_buf_size(n_in, n_hidden) (3 * (n_in) + 2 * (n_hidden))
 
 sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
@@ -45,6 +47,25 @@ sann_t *sann_init_mln(int n_layers, const int *n_neurons)
 int sann_n_par(const sann_t *m)
 {
 	return m->is_mln? smln_n_par(m->n_layers, m->n_neurons) : sae_n_par(m->n_neurons[0], m->n_neurons[1]);
+}
+
+void sann_cpy(sann_t *d, const sann_t *m)
+{
+	d->is_mln = m->is_mln, d->k_sparse = m->k_sparse, d->scaled = m->scaled, d->n_layers = m->n_layers;
+	d->n_neurons = (int32_t*)realloc(d->n_neurons, m->n_layers * 4);
+	memcpy(d->n_neurons, m->n_neurons, m->n_layers * 4);
+	d->af = (int32_t*)realloc(d->af, (m->n_layers - 1) * 4);
+	memcpy(d->af, m->af, (m->n_layers - 1) * 4);
+	d->t = (float*)realloc(d->t, sann_n_par(m) * sizeof(float));
+	memcpy(d->t, m->t, sann_n_par(m) * sizeof(float));
+}
+
+sann_t *sann_dup(const sann_t *m)
+{
+	sann_t *d;
+	d = (sann_t*)calloc(1, sizeof(sann_t));
+	sann_cpy(d, m);
+	return d;
 }
 
 void sann_destroy(sann_t *m)
@@ -106,10 +127,10 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo)
 	tc->L2_par = .001;
 	if (malgo == SANN_MIN_SGD) {
 		tc->mini_batch = 10;
-		tc->h = .1;
+		tc->h = .01;
 	} else if (malgo == SANN_MIN_RMSPROP) {
 		tc->mini_batch = 50;
-		tc->h = .01;
+		tc->h = .001;
 		tc->decay = .9;
 	}
 }
@@ -149,7 +170,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	} else for (i = 0; i < n; ++i) g[i] *= t;
 }
 
-float sann_train(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y)
+float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y)
 {
 	minibatch_t mb;
 	float **aux = 0;
@@ -188,9 +209,7 @@ float sann_train(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, floa
 		if (tc->malgo == SANN_MIN_SGD) {
 			sann_SGD(n_par, tc->h, m->t, aux[0], mb_gradient, &mb);
 		} else if (tc->malgo == SANN_MIN_RMSPROP) {
-			float h = tc->h;
-			if (!y && m->scaled != SAE_SC_NONE) h *= .5 * sqrt(sae_n_hidden(m) < sae_n_in(m)? sae_n_hidden(m) : sae_n_in(m));
-			sann_RMSprop(n_par, h, tc->decay, m->t, aux[0], aux[1], mb_gradient, &mb);
+			sann_RMSprop(n_par, tc->h, tc->decay, m->t, aux[0], aux[1], mb_gradient, &mb);
 		}
 		mn += mb.n;
 	}
@@ -200,6 +219,56 @@ float sann_train(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, floa
 	for (i = 0; i < n_aux; ++i) free(aux[i]);
 	free(sx); free(sy);
 	return mb.running_cost / n_out / n;
+}
+
+/*************************
+ * Train for many epochs *
+ *************************/
+
+#define SANN_TRAIN_FUZZY .005
+
+int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_epochs, int n, float *const* x, float *const* y)
+{
+	sann_tconf_t tc = *_tc;
+	int k, best_epoch = -1, best_past = -1;
+	sann_t *best_m;
+	float last_rc = -1, best_rc = -1, best_next_h = -1;
+	best_m = sann_dup(m);
+	tc.h = sqrt(min_h * max_h);
+	for (k = 0; k < n_epochs; ++k) {
+		float rc, old_h = tc.h;
+		rc = sann_train1(m, &tc, n, x, y);
+		if (sann_verbose >= 3)
+			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g\n", __func__, k+1, old_h, rc);
+		if (k == 0) {
+			best_rc = rc, best_next_h = tc.h, best_epoch = 0, best_past = 0;
+			sann_cpy(best_m, m);
+		} else {
+			if (rc > best_rc * 1.1 || best_past >= 5) { // revert to the previous best
+				sann_cpy(m, best_m);
+				tc.h = best_next_h, best_next_h *= .5, best_past = 0;
+				rc = best_rc;
+				if (sann_verbose >= 3)
+					fprintf(stderr, "[M::%s] revert to the model at epoch = %d\n", __func__, best_epoch);
+			} else {
+				float r = rc / last_rc, f = 1.;
+				if (rc < best_rc) {
+					sann_cpy(best_m, m);
+					best_rc = rc, best_next_h = tc.h, best_epoch = k, best_past = 0;
+				} else ++best_past;
+				if (r > 1 + SANN_TRAIN_FUZZY) f = 1. / (1. + r);
+				else if (r > 1 - SANN_TRAIN_FUZZY) f = 1. / (1. + (r - (1 - SANN_TRAIN_FUZZY)) / (SANN_TRAIN_FUZZY*20));
+				else if (r < 1 - SANN_TRAIN_FUZZY) f = 1. + ((1 - SANN_TRAIN_FUZZY) - r) / (SANN_TRAIN_FUZZY*20);
+				tc.h *= f;
+			}
+		}
+		if (tc.h > max_h) tc.h = max_h;
+		if (tc.h < min_h) tc.h = min_h;
+		last_rc = rc;
+	}
+	sann_cpy(m, best_m);
+	sann_destroy(best_m);
+	return 0;
 }
 
 /**********************
