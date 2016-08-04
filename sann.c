@@ -230,44 +230,28 @@ float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, flo
 int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_epochs, int n, float *const* x, float *const* y)
 {
 	sann_tconf_t tc = *_tc;
-	int k, best_epoch = -1, best_past = -1;
-	sann_t *best_m;
-	float last_rc = -1, best_rc = -1, best_next_h = -1;
-	best_m = sann_dup(m);
-	tc.h = sqrt(min_h * max_h);
+	int k;
+	float last_rc = -1, last_f = -1, last_h0 = -1;
+	tc.h = min_h;
 	for (k = 0; k < n_epochs; ++k) {
 		float rc, old_h = tc.h;
 		rc = sann_train1(m, &tc, n, x, y);
 		if (sann_verbose >= 3)
 			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g\n", __func__, k+1, old_h, rc);
-		if (k == 0) {
-			best_rc = rc, best_next_h = tc.h, best_epoch = 0, best_past = 0;
-			sann_cpy(best_m, m);
-		} else {
-			if (rc > best_rc * 1.1 || best_past >= 5) { // revert to the previous best
-				sann_cpy(m, best_m);
-				tc.h = best_next_h, best_next_h *= .5, best_past = 0;
-				rc = best_rc;
-				if (sann_verbose >= 3)
-					fprintf(stderr, "[M::%s] revert to the model at epoch = %d\n", __func__, best_epoch);
-			} else {
-				float r = rc / last_rc, f = 1.;
-				if (rc < best_rc) {
-					sann_cpy(best_m, m);
-					best_rc = rc, best_next_h = tc.h, best_epoch = k, best_past = 0;
-				} else ++best_past;
-				if (r > 1 + SANN_TRAIN_FUZZY) f = 1. / (1. + r);
-				else if (r > 1 - SANN_TRAIN_FUZZY) f = 1. / (1. + (r - (1 - SANN_TRAIN_FUZZY)) / (SANN_TRAIN_FUZZY*20));
-				else if (r < 1 - SANN_TRAIN_FUZZY) f = 1. + ((1 - SANN_TRAIN_FUZZY) - r) / (SANN_TRAIN_FUZZY*20);
-				tc.h *= f;
-			}
+		if (k > 0) {
+			float r = rc / last_rc, f = 1.;
+			if (last_f > 1. && rc > last_rc) max_h = last_h0;
+			last_h0 = tc.h;
+			if (r > 1 + SANN_TRAIN_FUZZY) f = 1. / (1. + r);
+			else if (r > 1 - SANN_TRAIN_FUZZY) f = 1. / (1. + (r - (1 - SANN_TRAIN_FUZZY)) / (SANN_TRAIN_FUZZY*20));
+			else if (r < 1 - SANN_TRAIN_FUZZY) f = 1. + ((1 - SANN_TRAIN_FUZZY) - r) / (SANN_TRAIN_FUZZY*20);
+			tc.h *= f;
+			last_f = f;
 		}
 		if (tc.h > max_h) tc.h = max_h;
 		if (tc.h < min_h) tc.h = min_h;
 		last_rc = rc;
 	}
-	sann_cpy(m, best_m);
-	sann_destroy(best_m);
 	return 0;
 }
 
