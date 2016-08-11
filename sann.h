@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r9"
+#define SAE_VERSION "r10"
 
 #include <stdint.h>
 
@@ -52,8 +52,9 @@ void sann_apply(const sann_t *m, const float *x, float *y, float *z);
 float sann_cost(int n, const float *y0, const float *y);
 int sann_n_par(const sann_t *m);
 
-int sann_dump(const char *fn, const sann_t *m, char *const* col_names);
-sann_t *sann_restore(const char *fn, char ***col_names);
+int sann_dump(const char *fn, const sann_t *m, char *const* col_names_in, char *const* col_names_out);
+sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out);
+void sann_free_names(int n, char **s);
 
 void sann_tconf_init(sann_tconf_t *t, int malgo);
 float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y);

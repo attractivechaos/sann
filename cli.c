@@ -18,7 +18,7 @@ int main_train(int argc, char *argv[])
 	float **x, **y, min_h = .001, max_h = .1, frac_test = .1;
 	sann_t *m = 0;
 	sann_tconf_t tc;
-	char **row_names, **col_names = 0;
+	char **row_names, **col_names_in = 0, **col_names_out = 0;
 
 	srand48(11);
 	sann_tconf_init(&tc, SANN_MIN_RMSPROP);
@@ -27,7 +27,7 @@ int main_train(int argc, char *argv[])
 		else if (c == 'n') n_rounds = atoi(optarg);
 		else if (c == 'G') sann_tconf_init(&tc, SANN_MIN_SGD);
 		else if (c == 'r') tc.r = atof(optarg);
-		else if (c == 'i') m = sann_restore(optarg, &col_names);
+		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
 		else if (c == 'k') k_sparse = atoi(optarg);
@@ -62,11 +62,11 @@ int main_train(int argc, char *argv[])
 		n_hidden = m->n_neurons[1];
 	}
 
-	x = sann_data_read(argv[optind], &N, &n_in, &row_names, col_names? 0 : &col_names);
+	x = sann_data_read(argv[optind], &N, &n_in, &row_names, col_names_in? 0 : &col_names_in);
 	n_test = (int)(N * frac_test);
 	fprintf(stderr, "[M::%s] read %d vectors, each of size %d\n", __func__, N, n_in);
 	if (optind + 1 < argc) {
-		y = sann_data_read(argv[optind+1], &N, &n_out, 0, 0);
+		y = sann_data_read(argv[optind+1], &N, &n_out, 0, col_names_out? 0 : &col_names_out);
 		fprintf(stderr, "[M::%s] read %d vectors, each of size %d\n", __func__, N, n_out);
 	} else y = 0;
 
@@ -89,12 +89,10 @@ int main_train(int argc, char *argv[])
 
 	sann_data_shuffle(N, (const float**)x, (const float**)y, (const char**)row_names);
 	sann_train(m, &tc, min_h, max_h, n_rounds, N - n_test, n_test, x, y);
-	sann_dump(0, m, col_names);
+	sann_dump(0, m, col_names_in, col_names_out);
 
-	if (col_names) {
-		for (i = 0; i < n_in; ++i) free(col_names[i]);
-		free(col_names);
-	}
+	sann_free_names(n_in, col_names_in);
+	sann_free_names(sann_n_out(m), col_names_out);
 	for (i = 0; i < N; ++i) {
 		free(x[i]);
 		if (y) free(y[i]);
@@ -111,7 +109,7 @@ int main_apply(int argc, char *argv[])
 	sann_t *m;
 	float **x, *y, *z;
 	double cost;
-	char **row_names, **col_names = 0;
+	char **row_names, **col_names_in = 0, **col_names_out = 0;
 
 	while ((c = getopt(argc, argv, "h")) >= 0) {
 		if (c == 'h') show_hidden = 1;
@@ -123,8 +121,8 @@ int main_apply(int argc, char *argv[])
 		return 1;
 	}
 
-	m = sann_restore(argv[optind], &col_names);
-	x = sann_data_read(argv[optind+1], &n_samples, &n_in, &row_names, col_names? 0 : &col_names);
+	m = sann_restore(argv[optind], &col_names_in, &col_names_out);
+	x = sann_data_read(argv[optind+1], &n_samples, &n_in, &row_names, col_names_in? 0 : &col_names_in);
 	if (sann_n_in(m) != n_in) {
 		fprintf(stderr, "[M::%s] mismatch between the input model and the input data\n", __func__);
 		return 1;
@@ -132,12 +130,18 @@ int main_apply(int argc, char *argv[])
 	y = (float*)malloc((sann_n_out(m) + sae_n_hidden(m)) * sizeof(float));
 	z = y + sann_n_out(m);
 
-	if (col_names) {
+	if (m->is_mln && col_names_out) {
+		printf("#sample");
+		for (i = 0; i < sann_n_out(m); ++i)
+			printf("\t%s", col_names_out[i]);
+		putchar('\n');
+	} else if (!m->is_mln && !show_hidden && col_names_in) {
 		printf("#sample");
 		for (i = 0; i < sann_n_in(m); ++i)
-			printf("\t%s", col_names[i]);
+			printf("\t%s", col_names_in[i]);
 		putchar('\n');
 	}
+
 	for (i = 0, cost = 0.; i < n_samples; ++i) {
 		sann_apply(m, x[i], y, z);
 		cost += sann_cost(sann_n_out(m), x[i], y);
@@ -150,14 +154,12 @@ int main_apply(int argc, char *argv[])
 				printf("\t%g", y[j] + 1.0f - 1.0f);
 		}
 		putchar('\n');
-		free(row_names[i]); free(x[i]);
+		free(x[i]);
 	}
-	free(row_names); free(x);
-	free(y);
-	if (col_names) {
-		for (i = 0; i < sann_n_in(m); ++i) free(col_names[i]);
-		free(col_names);
-	}
+	free(x); free(y);
+	sann_free_names(n_samples, row_names);
+	sann_free_names(sann_n_in(m), col_names_in);
+	sann_free_names(sann_n_out(m), col_names_out);
 
 	if (!m->is_mln) fprintf(stderr, "[M::%s] cost = %g\n", __func__, cost / n_samples);
 
@@ -167,22 +169,20 @@ int main_apply(int argc, char *argv[])
 
 int main_view(int argc, char *argv[])
 {
-	int i, c;
+	int c;
 	sann_t *m;
-	char **col_names = 0;
+	char **col_names_in = 0, **col_names_out = 0;
 	while ((c = getopt(argc, argv, "")) >= 0) {
 	}
 	if (argc == optind) {
-		fprintf(stderr, "Usage: sann view [options] <model.san>\n");
+		fprintf(stderr, "Usage: sann view [options] <model.snm>\n");
 		return 1;
 	}
-	m = sann_restore(argv[optind], &col_names);
+	m = sann_restore(argv[optind], &col_names_in, &col_names_out);
 	sann_print(m);
+	sann_free_names(sann_n_in(m), col_names_in);
+	sann_free_names(sann_n_out(m), col_names_out);
 	sann_destroy(m);
-	if (col_names) {
-		for (i = 0; i < sann_n_in(m); ++i) free(col_names[i]);
-		free(col_names);
-	}
 	return 0;
 }
 

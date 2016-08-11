@@ -277,10 +277,23 @@ int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int
 
 #define SANN_MAGIC "SAN\1"
 
-int sann_dump(const char *fn, const sann_t *m, char *const* col_names)
+static void sann_dump_names(FILE *fp, int n, char *const* names)
+{
+	uint64_t tot_len = 0;
+	int i;
+	if (names == 0) return;
+	for (i = 0; i < n; ++i)
+		tot_len += strlen(names[i]) + 1;
+	fwrite(&tot_len, 8, 1, fp);
+	for (i = 0; i < n; ++i)
+		fwrite(names[i], 1, strlen(names[i]) + 1, fp);
+}
+
+int sann_dump(const char *fn, const sann_t *m, char *const* col_names_in, char *const* col_names_out)
 {
 	FILE *fp;
-	int i, n_par;
+	int n_par;
+	uint8_t name_flag = 0;
 
 	n_par = sann_n_par(m);
 	fp = fn && strcmp(fn, "-")? fopen(fn, "w") : stdout;
@@ -293,26 +306,48 @@ int sann_dump(const char *fn, const sann_t *m, char *const* col_names)
 	fwrite(m->n_neurons, 4, m->n_layers, fp);
 	fwrite(m->af, 4, m->n_layers - 1, fp);
 	fwrite(m->t, sizeof(float), n_par, fp);
-	if (col_names) {
-		uint64_t tot_len = 0;
-		for (i = 0; i < sann_n_in(m); ++i)
-			tot_len += strlen(col_names[i]) + 1;
-		fwrite(&tot_len, 8, 1, fp);
-		for (i = 0; i < sann_n_in(m); ++i)
-			fwrite(col_names[i], 1, strlen(col_names[i]) + 1, fp);
-	}
+	if (col_names_in) name_flag |= 1;
+	if (col_names_out) name_flag |= 2;
+	fwrite(&name_flag, 1, 1, fp);
+	sann_dump_names(fp, sann_n_in(m), col_names_in);
+	sann_dump_names(fp, sann_n_out(m), col_names_out);
 	if (fp != stdout) fclose(fp);
 	return 0;
 }
 
-sann_t *sann_restore(const char *fn, char ***col_names)
+static char **sann_restore_names(FILE *fp, int n)
+{
+	uint64_t tot_len;
+	if (fread(&tot_len, 8, 1, fp) == 1) {
+		char *p, *q, **names;
+		int i;
+		p = (char*)malloc(tot_len);
+		fread(p, 1, tot_len, fp);
+		names = (char**)calloc(n, sizeof(char*));
+		for (i = 0, q = p; i < n; ++i) {
+			int l;
+			l = strlen(q);
+			// possible to avoid strdup() but will leave a trap to endusers
+			names[i] = strdup(q);
+			q += l + 1;
+			assert(q - p <= tot_len);
+		}
+		free(p);
+		assert(q - p == tot_len);
+		return names;
+	} else return 0;
+}
+
+sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out)
 {
 	FILE *fp;
 	char magic[4];
 	sann_t *m;
-	int i, n_par;
-	uint64_t tot_len;
+	int n_par;
+	uint8_t name_flag;
 
+	if (col_names_in)  *col_names_in  = 0;
+	if (col_names_out) *col_names_out = 0;
 	fp = fn && strcmp(fn, "-")? fopen(fn, "r") : stdin;
 	if (fp == 0) return 0;
 	fread(magic, 1, 4, fp);
@@ -329,24 +364,29 @@ sann_t *sann_restore(const char *fn, char ***col_names)
 	n_par = sann_n_par(m);
 	m->t = (float*)malloc(n_par * sizeof(float));
 	fread(m->t, sizeof(float), n_par, fp);
-	if (col_names && fread(&tot_len, 8, 1, fp) == 1) {
-		char *p, *q;
-		p = (char*)malloc(tot_len);
-		fread(p, 1, tot_len, fp);
-		*col_names = (char**)calloc(sann_n_in(m), sizeof(char*));
-		for (i = 0, q = p; i < sann_n_in(m); ++i) {
-			int l;
-			l = strlen(q);
-			// possible to avoid strdup() but will leave a trap to endusers
-			(*col_names)[i] = strdup(q);
-			q += l + 1;
-			assert(q - p <= tot_len);
+	if (fread(&name_flag, 1, 1, fp) == 1) {
+		char **p;
+		if (name_flag&1) {
+			p = sann_restore_names(fp, sann_n_in(m));
+			if (col_names_in) *col_names_in = p;
+			else sann_free_names(sann_n_in(m), p);
 		}
-		free(p);
-		assert(q - p == tot_len);
+		if (name_flag&2) {
+			p = sann_restore_names(fp, sann_n_out(m));
+			if (col_names_out) *col_names_out = p;
+			else sann_free_names(sann_n_out(m), p);
+		}
 	}
 	if (fp != stdin) fclose(fp);
 	return m;
+}
+
+void sann_free_names(int n, char **s)
+{
+	int i;
+	if (s == 0) return;
+	for (i = 0; i < n; ++i) free(s[i]);
+	free(s);
 }
 
 void sann_print(const sann_t *m)
