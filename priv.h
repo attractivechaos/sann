@@ -3,6 +3,7 @@
 
 typedef const float *cfloat_p;
 typedef float *float_p;
+typedef const char *ccstr_p;
 
 typedef float (*sann_activate_f)(float t, float *deriv);
 typedef void (*sann_gradient_f)(int n, const float *x, float *gradient, void *data);
@@ -43,6 +44,8 @@ void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *a
 int smln_n_par(int n_layers, const int32_t *n_neurons);
 smln_buf_t *smln_buf_init(int n_layers, const int32_t *n_neurons, cfloat_p t);
 void smln_buf_destroy(smln_buf_t *b);
+
+void sann_data_shuffle(int n, cfloat_p *x, cfloat_p *y, ccstr_p *names);
 
 #ifdef __cplusplus
 }

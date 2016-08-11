@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r7"
+#define SAE_VERSION "r8"
 
 #include <stdint.h>
 
@@ -48,7 +48,8 @@ extern "C" {
 sann_t *sann_init_ae(int n_in, int n_hidden, int scaled);
 sann_t *sann_init_mln(int n_layers, const int *n_neurons);
 void sann_destroy(sann_t *m);
-float sann_apply(const sann_t *m, const float *x, float *y, float *z);
+void sann_apply(const sann_t *m, const float *x, float *y, float *z);
+float sann_cost(int n, const float *y0, const float *y);
 int sann_n_par(const sann_t *m);
 
 int sann_dump(const char *fn, const sann_t *m, char *const* col_names);
@@ -57,6 +58,7 @@ sann_t *sann_restore(const char *fn, char ***col_names);
 void sann_tconf_init(sann_tconf_t *t, int malgo);
 float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y);
 int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_rounds, int n, float *const* x, float *const* y);
+float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 
 float **sann_data_read(const char *fn, int *n_rows, int *n_cols, char ***row_names, char ***col_names);
 

@@ -74,7 +74,7 @@ void sann_destroy(sann_t *m)
 	free(m->n_neurons); free(m->af); free(m->t); free(m);
 }
 
-float sann_apply(const sann_t *m, const float *x, float *y, float *z)
+void sann_apply(const sann_t *m, const float *x, float *y, float *_z)
 {
 	if (m->is_mln) {
 		smln_buf_t *b;
@@ -82,18 +82,24 @@ float sann_apply(const sann_t *m, const float *x, float *y, float *z)
 		smln_core_forward(m->n_layers, m->n_neurons, m->af, m->t, x, b);
 		memcpy(y, b->out[m->n_layers-1], m->n_neurons[m->n_layers-1] * sizeof(float));
 		smln_buf_destroy(b);
-		return 0;
 	} else {
-		int i;
-		float *deriv1;
-		double cost;
+		float *deriv1, *z;
 		deriv1 = (float*)calloc(m->n_neurons[1], sizeof(float));
+		z = _z? _z : (float*)calloc(sae_n_hidden(m), sizeof(float));
 		sae_core_forward(sae_n_in(m), sae_n_hidden(m), m->t, sann_get_af(m->af[0]), sann_sigm, m->k_sparse, x, z, y, deriv1, m->scaled);
-		for (cost = 0., i = 0; i < sann_n_out(m); ++i)
-			cost += sann_sigm_cost(x[i], y[i]);
+		if (_z == 0) free(z);
 		free(deriv1);
-		return (float)(cost / sann_n_out(m));
 	}
+}
+
+float sann_cost(int n, const float *y0, const float *y)
+{
+	int i;
+	double cost = 0.;
+	if (n == 0) return 0.;
+	for (i = 0; i < n; ++i)
+		cost += sann_sigm_cost(y0[i], y[i]);
+	return (float)cost / n;
 }
 
 /************
@@ -175,24 +181,17 @@ float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, flo
 	minibatch_t mb;
 	float **aux = 0;
 	cfloat_p *sx = 0, *sy = 0;
-	int *si, i, j, mn = 0, n_aux, n_par, n_out;
+	int i, mn = 0, n_aux, n_par, n_out;
 
-	si = (int*)calloc(n, sizeof(int));
-	for (i = 0; i < n; ++i) si[i] = i;
-	for (i = n; i > 1; --i) { // shuffle
-		int tmp;
-		j = (int)(drand48() * i);
-		tmp = si[j]; si[j] = si[i-1]; si[i-1] = tmp;
+	sx = (cfloat_p*)malloc(n * sizeof(cfloat_p));
+	memcpy(sx, x, n * sizeof(cfloat_p));
+	if (m->is_mln) {
+		sy = (cfloat_p*)malloc(n * sizeof(cfloat_p));
+		memcpy(sy, y, n * sizeof(cfloat_p));
 	}
-	sx = (cfloat_p*)calloc(n, sizeof(cfloat_p));
-	if (m->is_mln) sy = (cfloat_p*)calloc(n, sizeof(cfloat_p));
-	for (i = 0; i < n; ++i) {
-		sx[i] = x[si[i]];
-		if (sy) sy[i] = y[si[i]];
-	}
-	free(si);
+	sann_data_shuffle(n, sx, sy, 0);
 
-	n_out = m->n_neurons[m->n_layers - 1];
+	n_out = sann_n_out(m);
 	n_par = sann_n_par(m);
 
 	n_aux = tc->malgo == SANN_MIN_RMSPROP? 2 : 1;
@@ -219,6 +218,23 @@ float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, flo
 	for (i = 0; i < n_aux; ++i) free(aux[i]);
 	free(sx); free(sy);
 	return mb.running_cost / n_out / n;
+}
+
+float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
+{
+	int i, j;
+	float *y;
+	double sum = 0.;
+	y = (float*)malloc(sann_n_out(m) * sizeof(float));
+	for (i = 0; i < n; ++i) {
+		double cost = 0.;
+		sann_apply(m, x[i], y, 0);
+		for (j = 0; j < sann_n_out(m); ++j)
+			cost += sann_sigm_cost(m->is_mln? y0[i][j] : x[i][j], y[j]);
+		sum += cost;
+	}
+	free(y);
+	return (float)(sum / n);
 }
 
 /*************************

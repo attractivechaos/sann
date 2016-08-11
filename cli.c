@@ -135,9 +135,10 @@ int main_apply(int argc, char *argv[])
 		putchar('\n');
 	}
 	for (i = 0, cost = 0.; i < n_samples; ++i) {
-		cost += sann_apply(m, x[i], y, z);
+		sann_apply(m, x[i], y, z);
+		cost += sann_cost(sann_n_out(m), x[i], y);
 		printf("%s", row_names[i]);
-		if (show_hidden) {
+		if (show_hidden && !m->is_mln) {
 			for (j = 0; j < sae_n_hidden(m); ++j)
 				printf("\t%g", z[j] + 1.0f - 1.0f);
 		} else {
@@ -154,7 +155,7 @@ int main_apply(int argc, char *argv[])
 		free(col_names);
 	}
 
-	fprintf(stderr, "[M::%s] cost = %g\n", __func__, cost / n_samples);
+	if (!m->is_mln) fprintf(stderr, "[M::%s] cost = %g\n", __func__, cost / n_samples);
 
 	sann_destroy(m);
 	return 0;

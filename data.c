@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <zlib.h>
 #include "sann.h"
+#include "priv.h"
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 16384)
 
@@ -67,4 +68,21 @@ float **sann_data_read(const char *fn, int *n_, int *n_col_, char ***row_names, 
 	if (row_names) *row_names = (char**)realloc(*row_names, n * sizeof(char*));
 	*n_ = n, *n_col_ = n_col;
 	return x;
+}
+
+void sann_data_shuffle(int n, cfloat_p *x, cfloat_p *y, ccstr_p *names)
+{
+	int i, *s;
+	s = (int*)malloc(n * sizeof(int));
+	for (i = n - 1; i >= 0; --i)
+		s[i] = (int)(drand48() * (i+1));
+	for (i = n - 1; i >= 0; --i) {
+		cfloat_p tf;
+		ccstr_p ts;
+		int j = s[i];
+		if (x) tf = x[i], x[i] = x[j], x[j] = tf;
+		if (y) tf = y[i], y[i] = y[j], y[j] = tf;
+		if (names) ts = names[i], names[i] = names[j], names[j] = ts;
+	}
+	free(s);
 }
