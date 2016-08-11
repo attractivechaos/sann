@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <math.h>
 #include "priv.h"
-#include "sann.h"
 
 int sann_verbose = 3;
 
@@ -176,7 +175,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	} else for (i = 0; i < n; ++i) g[i] *= t;
 }
 
-float sann_train1(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y)
+float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y)
 {
 	minibatch_t mb;
 	float **aux = 0;
@@ -234,7 +233,7 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
 		sum += cost;
 	}
 	free(y);
-	return (float)(sum / n);
+	return (float)(sum / n / sann_n_out(m));
 }
 
 /*************************
@@ -243,17 +242,18 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
 
 #define SANN_TRAIN_FUZZY .005
 
-int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_epochs, int n, float *const* x, float *const* y)
+int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
 {
 	sann_tconf_t tc = *_tc;
 	int k;
 	float last_rc = -1, last_f = -1, last_h0 = -1;
 	tc.h = min_h;
 	for (k = 0; k < n_epochs; ++k) {
-		float rc, old_h = tc.h;
-		rc = sann_train1(m, &tc, n, x, y);
+		float rc, cost, old_h = tc.h;
+		rc = sann_train_epoch(m, &tc, n_train, x, y);
+		cost = n_test? sann_test(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
 		if (sann_verbose >= 3)
-			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g\n", __func__, k+1, old_h, rc);
+			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g test_cost = %g\n", __func__, k+1, old_h, rc, cost);
 		if (k > 0) {
 			float r = rc / last_rc, f = 1.;
 			if (last_f > 1. && rc > last_rc) max_h = last_h0;

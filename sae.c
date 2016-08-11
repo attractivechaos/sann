@@ -4,7 +4,6 @@
 #include <float.h>
 #include <stdio.h>
 #include <math.h>
-#include "sann.h"
 #include "priv.h"
 #include "ksort.h"
 KSORT_INIT_GENERIC(float)

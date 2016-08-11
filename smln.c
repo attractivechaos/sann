@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <float.h>
 #include <math.h>
-#include "sann.h"
 #include "priv.h"
 
 int smln_n_par(int n_layers, const int32_t *n_neurons)

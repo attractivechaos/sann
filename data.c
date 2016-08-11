@@ -70,15 +70,15 @@ float **sann_data_read(const char *fn, int *n_, int *n_col_, char ***row_names, 
 	return x;
 }
 
-void sann_data_shuffle(int n, cfloat_p *x, cfloat_p *y, ccstr_p *names)
+void sann_data_shuffle(int n, const float **x, const float **y, const char **names)
 {
 	int i, *s;
 	s = (int*)malloc(n * sizeof(int));
 	for (i = n - 1; i >= 0; --i)
 		s[i] = (int)(drand48() * (i+1));
 	for (i = n - 1; i >= 0; --i) {
-		cfloat_p tf;
-		ccstr_p ts;
+		const float *tf;
+		const char *ts;
 		int j = s[i];
 		if (x) tf = x[i], x[i] = x[j], x[j] = tf;
 		if (y) tf = y[i], y[i] = y[j], y[j] = tf;

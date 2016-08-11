@@ -13,16 +13,16 @@
 
 int main_train(int argc, char *argv[])
 {
-	int c, i, N, n_in, n_out = 0, n_hidden = 50, n_rounds = 20, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT;
+	int c, i, N, n_in, n_out = 0, n_hidden = 50, n_rounds = 20, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, n_test;
 	int n_layers = 3, n_neurons[3];
-	float **x, **y, min_h = .001, max_h = .1;
+	float **x, **y, min_h = .001, max_h = .1, frac_test = .1;
 	sann_t *m = 0;
 	sann_tconf_t tc;
 	char **row_names, **col_names = 0;
 
 	srand48(11);
 	sann_tconf_init(&tc, SANN_MIN_RMSPROP);
-	while ((c = getopt(argc, argv, "h:n:r:e:Gi:s:f:k:S:")) >= 0) {
+	while ((c = getopt(argc, argv, "h:n:r:e:Gi:s:f:k:S:T:")) >= 0) {
 		if (c == 'h') n_hidden = atoi(optarg);
 		else if (c == 'n') n_rounds = atoi(optarg);
 		else if (c == 'G') sann_tconf_init(&tc, SANN_MIN_SGD);
@@ -32,6 +32,7 @@ int main_train(int argc, char *argv[])
 		else if (c == 'f') af = atoi(optarg);
 		else if (c == 'k') k_sparse = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
+		else if (c == 'T') frac_test = atof(optarg);
 		else if (c == 'e') {
 			char *p;
 			min_h = strtod(optarg, &p);
@@ -46,6 +47,7 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "  -r FLOAT        fraction of noises [%g]\n", tc.r);
 		fprintf(stderr, "  -k INT          k-sparse (<=0 or >={-h} to disable) [-1]\n");
 		fprintf(stderr, "  -n INT          number of rounds of training [%d]\n", n_rounds);
+		fprintf(stderr, "  -T FLOAT        fraction of data used for testing [%g]\n", frac_test);
 		fprintf(stderr, "  -e FLOAT1[,F2]  min and max learning rate [%g,%g]\n", min_h, max_h);
 		fprintf(stderr, "  -s INT          random seed [11]\n");
 		fprintf(stderr, "  -f INT          hidden activation function (1:sigm; 2:tanh; 3:ReLU) [1]\n");
@@ -61,6 +63,7 @@ int main_train(int argc, char *argv[])
 	}
 
 	x = sann_data_read(argv[optind], &N, &n_in, &row_names, col_names? 0 : &col_names);
+	n_test = (int)(N * frac_test);
 	fprintf(stderr, "[M::%s] read %d vectors, each of size %d\n", __func__, N, n_in);
 	if (optind + 1 < argc) {
 		y = sann_data_read(argv[optind+1], &N, &n_out, 0, 0);
@@ -84,7 +87,8 @@ int main_train(int argc, char *argv[])
 		}
 	}
 
-	sann_train(m, &tc, min_h, max_h, n_rounds, N, x, y);
+	sann_data_shuffle(N, (const float**)x, (const float**)y, (const char**)row_names);
+	sann_train(m, &tc, min_h, max_h, n_rounds, N - n_test, n_test, x, y);
 	sann_dump(0, m, col_names);
 
 	if (col_names) {

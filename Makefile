@@ -11,7 +11,7 @@ LIBS=		-lm -lz -lpthread
 .c.o:
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
-all:$(PROG)
+all:libsann.a $(PROG)
 
 sann:cli.o libsann.a
 		$(CC) $(CFLAGS) $< -o $@ -L. -lsann $(LIBS)
