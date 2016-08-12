@@ -1,0 +1,133 @@
+\documentclass{bioinfo}
+
+\usepackage{amsmath}
+
+\begin{document}
+\firstpage{1}
+
+\title[DANN]{Directed Acyclic Neural Networks}
+\author[Li]{Heng Li}
+\address{Broad Institute, 75 Ames Street, Cambridge, MA 02142, USA}
+\maketitle
+
+\begin{methods}
+
+\section{Directed Acyclic Neural Networks}
+
+\subsection{Directed graphs}
+
+A directed graph is a 2-tuple $G=(N,C)$, where $N$ is the \emph{vertex set} and
+$C$ the \emph{edge set}. $G$ is \emph{simple} if 1) there is at most one edge
+between two distinct vertices and 2) there are no edges that connect a vertex
+to itself. When $G$ is simple, $C$ can be regarded as a subset of $N\times N$
+and therefore, an edge from vertex $i$ to $j$ can be written as an order pair
+$(i,j)$. We only consider simple graphs in this note.
+
+For $i\in N$, $A^+_i=\{j:(i,j)\in C\}$ is the set of \emph{outgoing
+neighbors} of $i$ and $A^-_i=\{j:(j,i)\in C\}$ the set of \emph{incoming
+neighbors}. As $G$ is simple, $|A^+_i|$ equals the outdegree of $i$ and
+$|A^-_i|$ equals the indegree.
+
+In a simple graph $G$, a \emph{walk} is a sequence of vertices $i_1i_2\cdots
+i_k$ such that adjacent vertices form an edge. A \emph{path} is a walk that
+does not have duplicated vertices. A \emph{cycle} is a walk that starts and
+ends at the same vertex, but has no other duplicated vertices.
+
+A \emph{directed acyclic graph} (DAG) is a directed graph without cycles.
+A \emph{topological sort} is a sequence of vertices such that $\forall(i,j)\in
+C$, $i$ appears ahead of $j$ in the sequence. A topological sort is only
+possible if $G$ is a DAG. There may be multiple valid topological sorts.
+In a DAG, we let $N^{\downarrow}$ denote the set of vertices that have no incoming edges
+and $N^{\uparrow}$ the set of vertices that have no outgoing edges.
+
+\subsection{Directed acyclic neural networks}
+
+A directed acyclic neural network (DANN) is $\mathcal{N}=(N,C;f,w,b)$, where:
+\begin{enumerate}
+\item $N$ is the set of \emph{neurons} and $C$ the set of \emph{connections};
+	$(N,C)$ is a DAG. Neurons in $N^{\downarrow}$ are called input neurons
+	and neurons in $N^{\uparrow}$ are called output neurons.
+\item $f:\Re\to\Re$ is the \emph{activation function}. In principle, it is
+	possible to attach a different $f$ to each neuron.
+\item $w:C\to\Re$ gives a \emph{weight} to each connection; $b:N\setminus
+	N^{\downarrow}\to\Re$ gives a \emph{bias} to each neuron.
+\end{enumerate}
+
+A DANN takes an input vector $\vec{x}$ of dimension $|N^{\downarrow}|$ and
+generates an output as follows. If $i$ is an input neuron, $t_i=x_i$; otherwise
+$t_i$ is recursively computed with
+\begin{equation}\label{eq:t-recur}
+t_i=\sum_{j\in A^-_i} w_{i\gets j}f(t_j)+b_i
+\end{equation}
+At output neuron $j$, the output value is $f(t_j)$.  Notably in this form,
+$t_i$ is a function of the inputs of its predecessors. This relationship is
+critical to the derivation of the backpropagation algorithm.
+
+\subsection{Backpropagation algorithm}
+
+The \emph{cost function} of DANN is
+\[
+\mathcal{F} = \sum_{i\in N^{\uparrow}} F(t_i,y_i)
+\]
+where $y_i$ is the \emph{correct} output and $F$ is a function that reaches the
+minimum if and only if $f(t_i)=y_i$. Define
+\[
+\delta_i\triangleq\left.\frac{\partial\mathcal{F}}{\partial t_i}\right|_{\vec{x},\vec{y}}
+\]
+For $i\in N^{\uparrow}$,
+\[
+\delta_i=\left.\frac{\partial}{\partial t_i}\sum_{j\in N^{\uparrow}} F(t_j,\vec{y})\right|_{\vec{t}^{\uparrow},\vec{y}}=\left.\frac{\partial}{\partial t_i}F(t_i,y_i)\right|_{t_i,y_i}
+\]
+For $i\not\in N^{\uparrow}$, we need to recursively expand $t_{\cdot}$ with
+Eq.~(\ref{eq:t-recur}) until we see $t_i$:
+\[
+\delta_i=\left.\frac{\partial\mathcal{F}}{\partial t_i}\right|_{\vec{x},\vec{y}}
+=\sum_{j\in A^+_{i}}\left.\frac{\partial\mathcal{F}}{\partial t_j}\right|_{\vec{x},\vec{y}}\cdot
+\left.\frac{\partial t_j}{\partial t_i}\right|_{t_i}
+=f'(t_i)\cdot\sum_{j\in A_i^+}w_{j\gets i}\delta_j
+\]
+With $\delta_i$, we can calculate the gradient of $w$ and $b$
+\[
+\left.\frac{\partial \mathcal{F}}{\partial b_i}\right|_{\vec{x},\vec{y}}=\frac{\partial \mathcal{F}}{\partial t_i}\cdot\frac{\partial t_i}{\partial b_i}=\delta_i
+\]
+\[
+\left.\frac{\partial \mathcal{F}}{\partial w_{j\gets i}}\right|_{\vec{x},\vec{y}}=\frac{\partial \mathcal{F}}{\partial t_j}\cdot\frac{\partial t_j}{\partial w_{j\gets i}}
+	=\delta_j\cdot\frac{\partial}{\partial w_{j\gets i}}\sum_{k\in A^-_j} w_{j\gets k}f(t_k)=\delta_j f(t_i)
+\]
+
+\subsection{Typical activation functions and cost functions}
+
+Sigmoid activation function:
+\[
+f_s(z)=\frac{1}{1+e^{-x}}
+\]
+Its first derivative:
+\[
+f'_s(z)=f_s(z)\big[1-f_s(z)\big]
+\]
+Tanh activation function:
+\[
+f_h(z)=\frac{1-e^{-2x}}{1+e^{-2x}}
+\]
+Its first derivative:
+\[
+f_h'(z)=1-f_h^2(z)
+\]
+Cross-entropy cost function for sigmoid activation:
+\[
+F_s(t,y)=-y\log f_s(t)-(1-y)\log\big[1-f_s(t)\big]
+\]
+\[
+\frac{\partial F_s(t,y)}{\partial t}=f_s(t)-y
+\]
+Cross-entropy cost function for tanh activation:
+\[
+F_h(t,y)=-\frac{1+y}{2}\log\frac{1+f_h(t)}{2}-\frac{1-y}{2}\log\frac{1-f_h(t)}{2}
+\]
+\[
+\frac{\partial F_h(t,y)}{\partial t}=f_h(t)-y
+\]
+
+\end{methods}
+
+\end{document}
