@@ -4,7 +4,7 @@
 #include "sann.h"
 #include "priv.h"
 
-#define SANN_TINY 1e-37
+#define SANN_TINY 1e-9
 
 float sann_sigm(float x, float *deriv)
 {

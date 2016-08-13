@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r10"
+#define SAE_VERSION "r12"
 
 #include <stdint.h>
 
