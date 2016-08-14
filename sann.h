@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r12"
+#define SAE_VERSION "r15"
 
 #include <stdint.h>
 
@@ -57,7 +57,7 @@ sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out
 void sann_free_names(int n, char **s);
 
 void sann_tconf_init(sann_tconf_t *t, int malgo);
-float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y);
+float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y, float **_buf);
 int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_rounds, int n_train, int n_test, float *const* x, float *const* y);
 float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 

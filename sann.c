@@ -175,12 +175,12 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	} else for (i = 0; i < n; ++i) g[i] *= t;
 }
 
-float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y)
+float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y, float **_buf)
 {
 	minibatch_t mb;
-	float **aux = 0;
+	float *buf, *g, *r;
 	cfloat_p *sx = 0, *sy = 0;
-	int i, mn = 0, n_aux, n_par, n_out;
+	int mn = 0, n_par, n_out, buf_size;
 
 	sx = (cfloat_p*)malloc(n * sizeof(cfloat_p));
 	memcpy(sx, x, n * sizeof(cfloat_p));
@@ -192,10 +192,12 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x
 
 	n_out = sann_n_out(m);
 	n_par = sann_n_par(m);
+	buf_size = 2 * n_par;
 
-	n_aux = tc->malgo == SANN_MIN_RMSPROP? 2 : 1;
-	aux = (float**)alloca(n_aux * sizeof(float*));
-	for (i = 0; i < n_aux; ++i) aux[i] = (float*)calloc(n_par, sizeof(float));
+	buf = _buf? *_buf : 0;
+	if (buf == 0) buf = (float*)calloc(buf_size, sizeof(float));
+	if (_buf) *_buf = buf;
+	g = buf, r = g + n_par;
 
 	mb.m = m, mb.tc = tc, mb.running_cost = 0.;
 	mb.buf_mln = m->is_mln? smln_buf_init(m->n_layers, m->n_neurons, m->t) : 0;
@@ -205,16 +207,16 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x
 		mb.x = &sx[mn];
 		mb.y = sy? &sy[mn] : 0;
 		if (tc->malgo == SANN_MIN_SGD) {
-			sann_SGD(n_par, tc->h, m->t, aux[0], mb_gradient, &mb);
+			sann_SGD(n_par, tc->h, m->t, g, mb_gradient, &mb);
 		} else if (tc->malgo == SANN_MIN_RMSPROP) {
-			sann_RMSprop(n_par, tc->h, tc->decay, m->t, aux[0], aux[1], mb_gradient, &mb);
+			sann_RMSprop(n_par, tc->h, tc->decay, m->t, g, r, mb_gradient, &mb);
 		}
 		mn += mb.n;
 	}
 	if (mb.buf_ae) free(mb.buf_ae);
 	if (mb.buf_mln) smln_buf_destroy(mb.buf_mln);
 
-	for (i = 0; i < n_aux; ++i) free(aux[i]);
+	if (_buf == 0) free(buf);
 	free(sx); free(sy);
 	return mb.running_cost / n_out / n;
 }
@@ -250,7 +252,7 @@ int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int
 	tc.h = min_h;
 	for (k = 0; k < n_epochs; ++k) {
 		float rc, cost, old_h = tc.h;
-		rc = sann_train_epoch(m, &tc, n_train, x, y);
+		rc = sann_train_epoch(m, &tc, n_train, x, y, 0);
 		cost = n_test? sann_test(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
 		if (sann_verbose >= 3)
 			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g test_cost = %g\n", __func__, k+1, old_h, rc, cost);
