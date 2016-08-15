@@ -17,6 +17,12 @@ make
 # generate the output (extract the truth from the row names)
 gzip -dc train-x.snd.gz | ./gen_truth.pl | gzip > train-y.snd.gz
 gzip -dc test-x.snd.gz | ./gen_truth.pl | gzip > test-y.snd.gz
+
+# train SANN (for r19, this stops at epoch 22)
+../sann train -n50 -e.001 train-x.snd.gz train-y.snd.gz > model.snm
+
+# apply to test samples (for r19, this gives 2.87% error rate)
+../sann apply model.snm test-x.snd.gz | ./eval.pl
 ```
 
 [mnist]: http://yann.lecun.com/exdb/mnist/

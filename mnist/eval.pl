@@ -17,4 +17,4 @@ while (<>) {
 	}
 	++$cnt[1] if $max_i != $t;
 }
-printf("%.2f\n", 100.*$cnt[1]/$cnt[0]);
+printf("Error rate: %.2f%%\n", 100.*$cnt[1]/$cnt[0]);
