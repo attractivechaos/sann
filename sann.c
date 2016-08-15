@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <float.h>
 #include <stdio.h>
 #include <math.h>
 #include "priv.h"
@@ -143,6 +144,7 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 	tc->h = .01f;
 	tc->h_min = 0.0f, tc->h_max = .1f;
 	tc->rprop_dec = .5f, tc->rprop_inc = 1.2f;
+	tc->max_inc = 10;
 
 	if (tc->malgo == SANN_MIN_MINI_SGD) {
 		tc->mini_batch = 10;
@@ -259,10 +261,11 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
 
 int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
 {
-	sann_tconf_t tc = *tc0;
-	int i, k, n_par;
-	float *g_prev, *g_curr, *t_prev, *h = 0;
+	int i, k, n_par, n_cost_inc = 0, n_cost_inc2 = 0;
+	float *g_prev, *g_curr, *t_prev, *h = 0, cost_best = FLT_MAX, cost_prev = FLT_MAX;
+	sann_t *best;
 
+	best = sann_dup(m);
 	n_par = sann_n_par(m);
 	t_prev = (float*)calloc(n_par * 3, sizeof(float));
 	g_prev = t_prev + n_par;
@@ -273,12 +276,30 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 	}
 	for (k = 0; k < n_epochs; ++k) {
 		float rc, cost;
+
 		if (h) memcpy(t_prev, m->t, n_par * sizeof(float));
-		rc = sann_train_epoch(m, &tc, h, n_train, x, y, 0);
+		rc = sann_train_epoch(m, tc0, h, n_train, x, y, 0);
 		cost = n_test? sann_test(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
 		if (sann_verbose >= 3)
-			fprintf(stderr, "[M::%s] epoch = %d running_cost = %g test_cost = %g\n", __func__, k+1, rc, cost);
-		if (h) {
+			fprintf(stderr, "[M::%s] epoch:%d running_cost:%g validation_cost:%g\n", __func__, k+1, rc, cost);
+
+		if (cost < cost_best) {
+			cost_best = cost;
+			sann_cpy(best, m);
+			n_cost_inc = 0;
+		} else if (cost > cost_best) {
+			if (++n_cost_inc > tc0->max_inc)
+				break;
+		}
+		if (cost < cost_prev) {
+			n_cost_inc2 = 0;
+		} else if (cost > cost_prev) {
+			if (++n_cost_inc2 > tc0->max_inc/2)
+				break;
+		}
+		cost_prev = cost;
+
+		if (h) { // iRprop-
 			for (i = 0; i < n_par; ++i)
 				g_curr[i] = m->t[i] - t_prev[i];
 			if (k >= 1) { // iRprop-
@@ -298,7 +319,9 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 		}
 	}
 	free(t_prev); free(h);
-	return 0;
+	sann_cpy(m, best);
+	sann_destroy(best);
+	return k;
 }
 
 /**********************

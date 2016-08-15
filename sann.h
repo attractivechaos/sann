@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r18"
+#define SAE_VERSION "r19"
 
 #include <stdint.h>
 
@@ -49,6 +49,7 @@ typedef struct {
 	int balgo;
 	float h_min, h_max; // for RPROP
 	float rprop_dec, rprop_inc;
+	int max_inc; // stop training if cost on validation samples increases for $max_inc epochs continuously
 } sann_tconf_t;
 
 #ifdef __cplusplus
