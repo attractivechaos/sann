@@ -206,7 +206,7 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 		sy = (cfloat_p*)malloc(n * sizeof(cfloat_p));
 		memcpy(sy, y, n * sizeof(cfloat_p));
 	}
-	sann_data_shuffle(n, sx, sy, 0);
+	sann_data_shuffle(n, (float**)sx, (float**)sy, 0);
 
 	n_out = sann_n_out(m);
 	n_par = sann_n_par(m);

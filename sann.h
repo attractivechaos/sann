@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r30"
+#define SANN_VERSION "r31"
 
 #include <stdint.h>
 
@@ -77,7 +77,7 @@ int sann_train(sann_t *m, const sann_tconf_t *_tc, int N, float *const* x, float
 float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 
 float **sann_data_read(const char *fn, int *n_rows, int *n_cols, char ***row_names, char ***col_names);
-void sann_data_shuffle(int n, const float **x, const float **y, const char **names);
+void sann_data_shuffle(int n, float **x, float **y, char **names);
 
 void sann_print(const sann_t *m);
 

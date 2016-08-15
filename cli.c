@@ -95,7 +95,7 @@ int main_train(int argc, char *argv[])
 		}
 	}
 
-	sann_data_shuffle(N, (const float**)x, (const float**)y, (const char**)row_names);
+	sann_data_shuffle(N, x, y, row_names);
 	sann_train(m, &tc, N, x, y);
 	sann_dump(0, m, col_names_in, col_names_out);
 
