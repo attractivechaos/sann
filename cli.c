@@ -91,6 +91,8 @@ int main_train(int argc, char *argv[])
 		} else {
 			n_neurons[0] = n_in, n_neurons[1] = n_hidden, n_neurons[2] = n_out;
 			m = sann_init_mln(n_layers, n_neurons);
+			if (af > 0)
+				for (i = 0; i < m->n_layers - 2; ++i) m->af[i] = af;
 		}
 	}
 
