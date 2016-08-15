@@ -261,8 +261,8 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
 
 int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
 {
-	int i, k, n_par, n_cost_inc = 0, n_cost_inc2 = 0;
-	float *g_prev, *g_curr, *t_prev, *h = 0, cost_best = FLT_MAX, cost_prev = FLT_MAX;
+	int i, k, n_par, n_cost_inc = 0, best_epoch = 0;
+	float *g_prev, *g_curr, *t_prev, *h = 0, cost_best = FLT_MAX;
 	sann_t *best;
 
 	best = sann_dup(m);
@@ -286,18 +286,11 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 		if (cost < cost_best) {
 			cost_best = cost;
 			sann_cpy(best, m);
-			n_cost_inc = 0;
+			n_cost_inc = 0, best_epoch = k;
 		} else if (cost > cost_best) {
 			if (++n_cost_inc > tc0->max_inc)
 				break;
 		}
-		if (cost < cost_prev) {
-			n_cost_inc2 = 0;
-		} else if (cost > cost_prev) {
-			if (++n_cost_inc2 > tc0->max_inc/2)
-				break;
-		}
-		cost_prev = cost;
 
 		if (h) { // iRprop-
 			for (i = 0; i < n_par; ++i)
@@ -318,6 +311,8 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 			memcpy(g_prev, g_curr, n_par * sizeof(float));
 		}
 	}
+	if (k < n_epochs && sann_verbose >= 3)
+		fprintf(stderr, "[M::%s] stopped at epoch %d as validation cost hasn't been improved since epoch %d\n", __func__, k+1, best_epoch+1);
 	free(t_prev); free(h);
 	sann_cpy(m, best);
 	sann_destroy(best);
