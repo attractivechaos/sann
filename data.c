@@ -94,3 +94,11 @@ void sann_free_names(int n, char **s)
 	for (i = 0; i < n; ++i) free(s[i]);
 	free(s);
 }
+
+void sann_free_vectors(int n, float **x)
+{
+	int i;
+	if (x == 0) return;
+	for (i = 0; i < n; ++i) free(x[i]);
+	free(x);
+}

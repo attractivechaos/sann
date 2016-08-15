@@ -13,9 +13,9 @@
 
 int main_train(int argc, char *argv[])
 {
-	int c, i, N, n_in, n_out = 0, n_hidden = 50, n_rounds = 20, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, n_test, malgo = 0, balgo = 0;
+	int c, i, N, n_in, n_out = 0, n_hidden = 50, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, malgo = 0, balgo = 0;
 	int n_layers = 3, n_neurons[3];
-	float **x, **y, frac_test = .1, h0 = 0.;
+	float **x, **y, h0 = 0.;
 	sann_t *m = 0;
 	sann_tconf_t tc;
 	char **row_names, **col_names_in = 0, **col_names_out = 0;
@@ -24,14 +24,14 @@ int main_train(int argc, char *argv[])
 	sann_tconf_init(&tc, malgo, balgo);
 	while ((c = getopt(argc, argv, "h:n:r:e:i:s:f:k:S:T:m:b:")) >= 0) {
 		if (c == 'h') n_hidden = atoi(optarg);
-		else if (c == 'n') n_rounds = atoi(optarg);
+		else if (c == 'n') tc.n_epochs = atoi(optarg);
 		else if (c == 'r') tc.r = atof(optarg);
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
 		else if (c == 'k') k_sparse = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
-		else if (c == 'T') frac_test = atof(optarg);
+		else if (c == 'T') tc.vfrac = atof(optarg);
 		else if (c == 'e') h0 = atof(optarg);
 		else if (c == 'm') {
 			malgo = atoi(optarg);
@@ -58,8 +58,8 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -m INT      minibatch optimization (1:SGD; 2:RMSprop) [%d]\n", SANN_MIN_MINI_RMSPROP);
 		fprintf(stderr, "    -b INT      batch optimization (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
 		fprintf(stderr, "    -e FLOAT    learning rate [.01 for SGD; .001 for RMSprop]\n");
-		fprintf(stderr, "    -T FLOAT    fraction of data used for testing [%g]\n", frac_test);
-		fprintf(stderr, "    -n INT      number of epochs [%d]\n", n_rounds);
+		fprintf(stderr, "    -T FLOAT    fraction of data used for testing [%g]\n", tc.vfrac);
+		fprintf(stderr, "    -n INT      number of epochs [%d]\n", tc.n_epochs);
 		return 1;
 	}
 
@@ -70,7 +70,6 @@ int main_train(int argc, char *argv[])
 	}
 
 	x = sann_data_read(argv[optind], &N, &n_in, &row_names, col_names_in? 0 : &col_names_in);
-	n_test = (int)(N * frac_test);
 	fprintf(stderr, "[M::%s] read %d vectors, each of size %d\n", __func__, N, n_in);
 	if (optind + 1 < argc) {
 		y = sann_data_read(argv[optind+1], &N, &n_out, 0, col_names_out? 0 : &col_names_out);
@@ -97,17 +96,14 @@ int main_train(int argc, char *argv[])
 	}
 
 	sann_data_shuffle(N, (const float**)x, (const float**)y, (const char**)row_names);
-	sann_train(m, &tc, n_rounds, N - n_test, n_test, x, y);
+	sann_train(m, &tc, N, x, y);
 	sann_dump(0, m, col_names_in, col_names_out);
 
 	sann_free_names(n_in, col_names_in);
 	sann_free_names(sann_n_out(m), col_names_out);
-	for (i = 0; i < N; ++i) {
-		free(x[i]);
-		if (y) free(y[i]);
-		free(row_names[i]);
-	}
-	free(x); free(y); free(row_names);
+	sann_free_names(N, row_names);
+	sann_free_vectors(N, x);
+	sann_free_vectors(N, y);
 	sann_destroy(m);
 	return 0;
 }

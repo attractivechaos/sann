@@ -137,6 +137,8 @@ void sann_RMSprop2(int n, const float *h, float decay, float *t, float *g, float
 void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 {
 	memset(tc, 0, sizeof(sann_tconf_t));
+	tc->n_epochs = 50;
+	tc->vfrac = .1f;
 	tc->malgo = malgo > 0? malgo : SANN_MIN_MINI_RMSPROP;
 	tc->balgo = balgo > 0? balgo : SANN_MIN_BATCH_RPROP;
 	tc->r = .3f;
@@ -259,11 +261,14 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
  * Train for many epochs *
  *************************/
 
-int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
+int sann_train(sann_t *m, const sann_tconf_t *tc0, int N, float *const* x, float *const* y)
 {
-	int i, k, n_par, n_cost_inc = 0, best_epoch = 0;
+	int i, k, n_par, n_cost_inc = 0, best_epoch = 0, n_train, n_test;
 	float *g_prev, *g_curr, *t_prev, *h = 0, cost_best = FLT_MAX;
 	sann_t *best;
+
+	n_test = (int)(N * tc0->vfrac);
+	n_train = N - n_test;
 
 	best = sann_dup(m);
 	n_par = sann_n_par(m);
@@ -274,7 +279,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 		h = (float*)calloc(n_par, sizeof(float));
 		for (i = 0; i < n_par; ++i) h[i] = tc0->h;
 	}
-	for (k = 0; k < n_epochs; ++k) {
+	for (k = 0; k < tc0->n_epochs; ++k) {
 		float rc, cost;
 
 		if (h) memcpy(t_prev, m->t, n_par * sizeof(float));
@@ -311,7 +316,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, in
 			memcpy(g_prev, g_curr, n_par * sizeof(float));
 		}
 	}
-	if (k < n_epochs && sann_verbose >= 3)
+	if (k < tc0->n_epochs && sann_verbose >= 3)
 		fprintf(stderr, "[M::%s] stopped at epoch %d as validation cost hasn't been improved since epoch %d\n", __func__, k+1, best_epoch+1);
 	free(t_prev); free(h);
 	sann_cpy(m, best);
