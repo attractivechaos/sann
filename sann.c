@@ -123,20 +123,34 @@ void sann_RMSprop(int n, float h, float decay, float *t, float *g, float *r, san
 	}
 }
 
-void sann_tconf_init(sann_tconf_t *tc, int malgo)
+void sann_RMSprop2(int n, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i;
+	func(n, t, g, data);
+	for (i = 0; i < n; ++i) {
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= h[i] / sqrt(1e-6 + r[i]) * g[i];
+	}
+}
+
+void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 {
 	memset(tc, 0, sizeof(sann_tconf_t));
-	if (malgo <= 0) malgo = SANN_MIN_RMSPROP;
-	tc->malgo = malgo;
-	tc->r = .3;
-	tc->L2_par = .001;
-	if (malgo == SANN_MIN_SGD) {
+	tc->malgo = malgo > 0? malgo : SANN_MIN_MINI_RMSPROP;
+	tc->balgo = balgo > 0? balgo : SANN_MIN_BATCH_RPROP;
+	tc->r = .3f;
+	tc->L2_par = .001f;
+	tc->h = .01f;
+	tc->h_min = 0.0f, tc->h_max = .1f;
+	tc->rprop_dec = .5f, tc->rprop_inc = 1.2f;
+
+	if (tc->malgo == SANN_MIN_MINI_SGD) {
 		tc->mini_batch = 10;
-		tc->h = .01;
-	} else if (malgo == SANN_MIN_RMSPROP) {
+		tc->h = .01f;
+	} else if (tc->malgo == SANN_MIN_MINI_RMSPROP) {
 		tc->mini_batch = 50;
-		tc->h = .001;
-		tc->decay = .9;
+		tc->h = .001f;
+		tc->decay = .9f;
 	}
 }
 
@@ -175,7 +189,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	} else for (i = 0; i < n; ++i) g[i] *= t;
 }
 
-float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y, float **_buf)
+float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n, float *const* x, float *const* y, float **_buf)
 {
 	minibatch_t mb;
 	float *buf, *g, *r;
@@ -206,10 +220,11 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x
 		mb.n = tc->mini_batch < n - mn? tc->mini_batch : n - mn;
 		mb.x = &sx[mn];
 		mb.y = sy? &sy[mn] : 0;
-		if (tc->malgo == SANN_MIN_SGD) {
+		if (tc->malgo == SANN_MIN_MINI_SGD) {
 			sann_SGD(n_par, tc->h, m->t, g, mb_gradient, &mb);
-		} else if (tc->malgo == SANN_MIN_RMSPROP) {
-			sann_RMSprop(n_par, tc->h, tc->decay, m->t, g, r, mb_gradient, &mb);
+		} else if (tc->malgo == SANN_MIN_MINI_RMSPROP) {
+			if (h) sann_RMSprop2(n_par, h, tc->decay, m->t, g, r, mb_gradient, &mb);
+			else sann_RMSprop(n_par, tc->h, tc->decay, m->t, g, r, mb_gradient, &mb);
 		}
 		mn += mb.n;
 	}
@@ -242,34 +257,47 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
  * Train for many epochs *
  *************************/
 
-#define SANN_TRAIN_FUZZY .005
-
-int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
+int sann_train(sann_t *m, const sann_tconf_t *tc0, int n_epochs, int n_train, int n_test, float *const* x, float *const* y)
 {
-	sann_tconf_t tc = *_tc;
-	int k;
-	float last_rc = -1, last_f = -1, last_h0 = -1;
-	tc.h = min_h;
+	sann_tconf_t tc = *tc0;
+	int i, k, n_par;
+	float *g_prev, *g_curr, *t_prev, *h = 0;
+
+	n_par = sann_n_par(m);
+	t_prev = (float*)calloc(n_par * 3, sizeof(float));
+	g_prev = t_prev + n_par;
+	g_curr = g_prev + n_par;
+	if (tc0->balgo == SANN_MIN_BATCH_RPROP) {
+		h = (float*)calloc(n_par, sizeof(float));
+		for (i = 0; i < n_par; ++i) h[i] = tc0->h;
+	}
 	for (k = 0; k < n_epochs; ++k) {
-		float rc, cost, old_h = tc.h;
-		rc = sann_train_epoch(m, &tc, n_train, x, y, 0);
+		float rc, cost;
+		if (h) memcpy(t_prev, m->t, n_par * sizeof(float));
+		rc = sann_train_epoch(m, &tc, h, n_train, x, y, 0);
 		cost = n_test? sann_test(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
 		if (sann_verbose >= 3)
-			fprintf(stderr, "[M::%s] epoch = %d learning_rate = %g running_cost = %g test_cost = %g\n", __func__, k+1, old_h, rc, cost);
-		if (k > 0) {
-			float r = rc / last_rc, f = 1.;
-			if (last_f > 1. && rc > last_rc) max_h = last_h0;
-			last_h0 = tc.h;
-			if (r > 1 + SANN_TRAIN_FUZZY) f = 1. / (1. + r);
-			else if (r > 1 - SANN_TRAIN_FUZZY) f = 1. / (1. + (r - (1 - SANN_TRAIN_FUZZY)) / (SANN_TRAIN_FUZZY*20));
-			else if (r < 1 - SANN_TRAIN_FUZZY) f = 1. + ((1 - SANN_TRAIN_FUZZY) - r) / (SANN_TRAIN_FUZZY*20);
-			tc.h *= f;
-			last_f = f;
+			fprintf(stderr, "[M::%s] epoch = %d running_cost = %g test_cost = %g\n", __func__, k+1, rc, cost);
+		if (h) {
+			for (i = 0; i < n_par; ++i)
+				g_curr[i] = m->t[i] - t_prev[i];
+			if (k >= 1) { // iRprop-
+				for (i = 0; i < n_par; ++i) {
+					float tmp = g_prev[i] * g_curr[i];
+					if (tmp > 0.) {
+						h[i] *= tc0->rprop_inc;
+						if (h[i] > tc0->h_max) h[i] = tc0->h_max;
+					} else if (tmp < 0.) {
+						h[i] *= tc0->rprop_dec;
+						if (h[i] < tc0->h_min) h[i] = tc0->h_min;
+						g_curr[i] = 0.;
+					}
+				}
+			}
+			memcpy(g_prev, g_curr, n_par * sizeof(float));
 		}
-		if (tc.h > max_h) tc.h = max_h;
-		if (tc.h < min_h) tc.h = min_h;
-		last_rc = rc;
 	}
+	free(t_prev); free(h);
 	return 0;
 }
 

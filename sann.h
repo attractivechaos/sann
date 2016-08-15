@@ -1,12 +1,15 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SAE_VERSION "r15"
+#define SAE_VERSION "r16"
 
 #include <stdint.h>
 
-#define SANN_MIN_SGD     1
-#define SANN_MIN_RMSPROP 2
+#define SANN_MIN_MINI_SGD     1
+#define SANN_MIN_MINI_RMSPROP 2
+
+#define SANN_MIN_BATCH_FIXED  1
+#define SANN_MIN_BATCH_RPROP  2
 
 #define SANN_AF_SIGM     1
 #define SANN_AF_TANH     2
@@ -33,12 +36,19 @@ typedef struct {
 } sann_t;
 
 typedef struct {
+	float L2_par; // L2 regularization, for mlnn only
+	float r; // ratio of noises, for autoencoder only
+	float h; // learning rate
+
+	// optimizer for minibatches
 	int malgo;
 	int mini_batch; // mini-batch size
-	float r; // ratio of noises
-	float h; // SGD/RMSprop learning rate
 	float decay; // for RMSprop
-	float L2_par; // L2 regularization, for mln only
+
+	// optimizer for complete batches
+	int balgo;
+	float h_min, h_max; // for RPROP
+	float rprop_dec, rprop_inc;
 } sann_tconf_t;
 
 #ifdef __cplusplus
@@ -56,9 +66,9 @@ int sann_dump(const char *fn, const sann_t *m, char *const* col_names_in, char *
 sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out);
 void sann_free_names(int n, char **s);
 
-void sann_tconf_init(sann_tconf_t *t, int malgo);
-float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, int n, float *const* x, float *const* y, float **_buf);
-int sann_train(sann_t *m, const sann_tconf_t *_tc, float min_h, float max_h, int n_rounds, int n_train, int n_test, float *const* x, float *const* y);
+void sann_tconf_init(sann_tconf_t *t, int balgo, int malgo);
+float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n, float *const* x, float *const* y, float **_buf);
+int sann_train(sann_t *m, const sann_tconf_t *_tc, int n_epochs, int n_train, int n_test, float *const* x, float *const* y);
 float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 
 float **sann_data_read(const char *fn, int *n_rows, int *n_cols, char ***row_names, char ***col_names);

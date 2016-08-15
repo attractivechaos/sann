@@ -13,19 +13,18 @@
 
 int main_train(int argc, char *argv[])
 {
-	int c, i, N, n_in, n_out = 0, n_hidden = 50, n_rounds = 20, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, n_test;
+	int c, i, N, n_in, n_out = 0, n_hidden = 50, n_rounds = 20, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, n_test, malgo = 0, balgo = 0;
 	int n_layers = 3, n_neurons[3];
-	float **x, **y, min_h = .001, max_h = .1, frac_test = .1;
+	float **x, **y, frac_test = .1;
 	sann_t *m = 0;
 	sann_tconf_t tc;
 	char **row_names, **col_names_in = 0, **col_names_out = 0;
 
 	srand48(11);
-	sann_tconf_init(&tc, SANN_MIN_RMSPROP);
-	while ((c = getopt(argc, argv, "h:n:r:e:Gi:s:f:k:S:T:")) >= 0) {
+	sann_tconf_init(&tc, malgo, balgo);
+	while ((c = getopt(argc, argv, "h:n:r:e:i:s:f:k:S:T:m:b:")) >= 0) {
 		if (c == 'h') n_hidden = atoi(optarg);
 		else if (c == 'n') n_rounds = atoi(optarg);
-		else if (c == 'G') sann_tconf_init(&tc, SANN_MIN_SGD);
 		else if (c == 'r') tc.r = atof(optarg);
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
@@ -33,26 +32,30 @@ int main_train(int argc, char *argv[])
 		else if (c == 'k') k_sparse = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
 		else if (c == 'T') frac_test = atof(optarg);
-		else if (c == 'e') {
-			char *p;
-			min_h = strtod(optarg, &p);
-			if (*p == ',') max_h = strtod(p+1, &p);
+		else if (c == 'e') tc.h = atof(optarg);
+		else if (c == 'm') {
+			malgo = atoi(optarg);
+			sann_tconf_init(&tc, malgo, balgo);
+		} else if (c == 'b') {
+			balgo = atoi(optarg);
+			sann_tconf_init(&tc, malgo, balgo);
 		}
 	}
 	if (argc == optind) {
 		fprintf(stderr, "Usage: sann train [options] <input.txt> [output.txt]\n");
 		fprintf(stderr, "Options:\n");
-		fprintf(stderr, "  -i FILE         read model from FILE []\n");
-		fprintf(stderr, "  -h INT          number of hidden neurons [%d]\n", n_hidden);
-		fprintf(stderr, "  -r FLOAT        fraction of noises [%g]\n", tc.r);
-		fprintf(stderr, "  -k INT          k-sparse (<=0 or >={-h} to disable) [-1]\n");
-		fprintf(stderr, "  -n INT          number of rounds of training [%d]\n", n_rounds);
-		fprintf(stderr, "  -T FLOAT        fraction of data used for testing [%g]\n", frac_test);
-		fprintf(stderr, "  -e FLOAT1[,F2]  min and max learning rate [%g,%g]\n", min_h, max_h);
-		fprintf(stderr, "  -s INT          random seed [11]\n");
-		fprintf(stderr, "  -f INT          hidden activation function (1:sigm; 2:tanh; 3:ReLU) [1]\n");
-		fprintf(stderr, "  -G              use SGD [use RMSprop]\n");
-		fprintf(stderr, "  -S INT          scaled model (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
+		fprintf(stderr, "  -i FILE     read model from FILE []\n");
+		fprintf(stderr, "  -h INT      number of hidden neurons [%d]\n", n_hidden);
+		fprintf(stderr, "  -r FLOAT    fraction of noises [%g]\n", tc.r);
+		fprintf(stderr, "  -k INT      k-sparse (<=0 or >={-h} to disable) [-1]\n");
+		fprintf(stderr, "  -n INT      number of rounds of training [%d]\n", n_rounds);
+		fprintf(stderr, "  -T FLOAT    fraction of data used for testing [%g]\n", frac_test);
+		fprintf(stderr, "  -e FLOAT    learning rate [%g]\n", tc.h);
+		fprintf(stderr, "  -s INT      random seed [11]\n");
+		fprintf(stderr, "  -f INT      hidden activation (1:sigm; 2:tanh; 3:ReLU) [1 for AE; 3 for MLN]\n");
+		fprintf(stderr, "  -m INT      minibatch optimization (1:SGD; 2:RMSprop) [2]\n");
+		fprintf(stderr, "  -b INT      batch optimization (1:fixed; 2:iRprop-) [2]\n");
+		fprintf(stderr, "  -S INT      scaled model (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
 		return 1;
 	}
 
@@ -88,7 +91,7 @@ int main_train(int argc, char *argv[])
 	}
 
 	sann_data_shuffle(N, (const float**)x, (const float**)y, (const char**)row_names);
-	sann_train(m, &tc, min_h, max_h, n_rounds, N - n_test, n_test, x, y);
+	sann_train(m, &tc, n_rounds, N - n_test, n_test, x, y);
 	sann_dump(0, m, col_names_in, col_names_out);
 
 	sann_free_names(n_in, col_names_in);
