@@ -86,3 +86,11 @@ void sann_data_shuffle(int n, const float **x, const float **y, const char **nam
 	}
 	free(s);
 }
+
+void sann_free_names(int n, char **s)
+{
+	int i;
+	if (s == 0) return;
+	for (i = 0; i < n; ++i) free(s[i]);
+	free(s);
+}

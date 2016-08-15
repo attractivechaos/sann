@@ -434,14 +434,6 @@ sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out
 	return m;
 }
 
-void sann_free_names(int n, char **s)
-{
-	int i;
-	if (s == 0) return;
-	for (i = 0; i < n; ++i) free(s[i]);
-	free(s);
-}
-
 void sann_print(const sann_t *m)
 {
 /*
