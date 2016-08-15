@@ -243,7 +243,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	if (ret == 0) {
-		fprintf(stderr, "[M::%s] Version: %s\n", __func__, SAE_VERSION);
+		fprintf(stderr, "[M::%s] Version: %s\n", __func__, SANN_VERSION);
 		fprintf(stderr, "[M::%s] CMD:", __func__);
 		for (i = 0; i < argc; ++i)
 			fprintf(stderr, " %s", argv[i]);
