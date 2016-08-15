@@ -1,8 +1,8 @@
 This directory implements a command-line interface to the [libfann](fann)
-library. To compile it, you need to have libfann preinstalled on your system,
-and then
+library, taking the SANN data format (SND) as input. To compile it, you need to
+have libfann preinstalled on your system, and then
 ```sh
-# compile (FANN_PREFIX not needed if libfann is installed in system directories)
+# compile (FANN_PREFIX not needed if libfann is installed in a system directory)
 make FANN_PREFIX=/path/to/fann/install
 
 # train
