@@ -28,8 +28,8 @@ depend:
 # DO NOT DELETE
 
 cli.o: sann.h
-data.o: sann.h kseq.h
+data.o: sann.h priv.h kseq.h
 math.o: sann.h priv.h
-sae.o: sann.h priv.h ksort.h
+sae.o: priv.h sann.h ksort.h
 sann.o: priv.h sann.h
-smln.o: sann.h priv.h
+smln.o: priv.h sann.h
