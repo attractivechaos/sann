@@ -17,4 +17,4 @@ make FANN_PREFIX=/path/to/fann/install
 Note that the command-line interface is mostly using the default training
 parameters. For now, it may not demonstrate the full power of libfann.
 
-[fann]: https://github.com/libfann/fann
+[fann]: http://leenissen.dk/fann/wp/
