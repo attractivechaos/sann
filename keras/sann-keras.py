@@ -46,9 +46,9 @@ def main_train(argv):
 		train_help()
 
 	for opt, arg in opts:
-		if opt == '-h': n_hidden = arg
-		elif opt == '-n': n_epochs = arg
-		elif opt == '-B': minibatch = arg
+		if opt == '-h': n_hidden = int(arg)
+		elif opt == '-n': n_epochs = int(arg)
+		elif opt == '-B': minibatch = int(arg)
 		elif opt == '-o': outfn = arg
 
 	x, x_rnames, x_cnames = sann_data_read(args[0])
