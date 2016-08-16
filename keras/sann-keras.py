@@ -5,6 +5,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.models import model_from_yaml
+from keras.optimizers import RMSprop
 
 def sann_data_read(fn):
 	x, row_names, col_names = [], [], []
@@ -27,19 +28,20 @@ def sann_data_read(fn):
 	return np.array(x).astype('float32'), row_names, col_names
 
 def main_train(argv):
-	n_hidden, n_epochs, minibatch, outfn = 50, 20, 64, None
+	n_hidden, n_epochs, minibatch, lr, outfn = 50, 20, 64, .001, None
 
 	def train_help():
 		print("Usage: sann-keras train [options] <input.snd> <output.snd>")
 		print("Options:")
 		print("  -h INT     number of hidden neurons [50]")
 		print("  -B INT     minibatch size [64]")
+		print("  -e FLOAT   learning rate [0.001]")
 		print("  -o FILE    save model to FILE []")
 		print("  -n INT     number of epochs [20]")
 		sys.exit(1)
 
 	try:
-		opts, args = getopt.getopt(argv, "h:n:B:o:")
+		opts, args = getopt.getopt(argv, "h:n:B:o:e:")
 	except getopt.GetoptError:
 		train_help()
 	if len(args) < 2:
@@ -50,13 +52,14 @@ def main_train(argv):
 		elif opt == '-n': n_epochs = int(arg)
 		elif opt == '-B': minibatch = int(arg)
 		elif opt == '-o': outfn = arg
+		elif opt == '-e': lr = float(arg)
 
 	x, x_rnames, x_cnames = sann_data_read(args[0])
 	y, y_rnames, y_cnames = sann_data_read(args[1])
 	model = Sequential()
 	model.add(Dense(n_hidden, input_dim=len(x[0]), activation='relu'))
 	model.add(Dense(len(y[0]), activation='sigmoid'))
-	model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+	model.compile(loss='binary_crossentropy', optimizer=RMSprop(lr=lr), metrics=['accuracy'])
 	model.fit(x, y, nb_epoch=n_epochs, batch_size=minibatch)
 	if outfn:
 		model_yaml = model.to_yaml()
