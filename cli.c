@@ -15,33 +15,33 @@ int main_train(int argc, char *argv[])
 {
 	int c, i, N, n_in, n_out = 0, n_hidden = 50, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, malgo = 0, balgo = 0;
 	int n_layers = 3, n_neurons[3];
-	float **x, **y, h0 = 0.;
+	float **x, **y;
 	sann_t *m = 0;
-	sann_tconf_t tc;
+	sann_tconf_t tc, tc1;
 	char **row_names, **col_names_in = 0, **col_names_out = 0;
 
 	srand48(11);
-	sann_tconf_init(&tc, malgo, balgo);
+	memset(&tc1, 0, sizeof(sann_tconf_t));
+	tc1.r = tc1.vfrac = -1.0f;
 	while ((c = getopt(argc, argv, "h:n:r:e:i:s:f:k:S:T:m:b:")) >= 0) {
 		if (c == 'h') n_hidden = atoi(optarg);
-		else if (c == 'n') tc.n_epochs = atoi(optarg);
-		else if (c == 'r') tc.r = atof(optarg);
+		else if (c == 'n') tc1.n_epochs = atoi(optarg);
+		else if (c == 'r') tc1.r = atof(optarg);
+		else if (c == 'T') tc1.vfrac = atof(optarg);
+		else if (c == 'e') tc1.h = atof(optarg);
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
 		else if (c == 'k') k_sparse = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
-		else if (c == 'T') tc.vfrac = atof(optarg);
-		else if (c == 'e') h0 = atof(optarg);
-		else if (c == 'm') {
-			malgo = atoi(optarg);
-			sann_tconf_init(&tc, malgo, balgo);
-		} else if (c == 'b') {
-			balgo = atoi(optarg);
-			sann_tconf_init(&tc, malgo, balgo);
-		}
+		else if (c == 'm') malgo = atoi(optarg);
+		else if (c == 'b') balgo = atoi(optarg);
 	}
-	if (h0 > 0.) tc.h = h0;
+	sann_tconf_init(&tc, malgo, balgo);
+	if (tc1.h > 0.0f) tc.h = tc1.h;
+	if (tc1.r >= 0.0f) tc.r = tc1.r; 
+	if (tc1.vfrac >= 0.0f) tc.vfrac = tc1.vfrac; 
+	if (tc1.n_epochs > 0) tc.n_epochs = tc1.n_epochs; 
 	if (argc == optind) {
 		fprintf(stderr, "Usage: sann train [options] <input.snd> [output.snd]\n");
 		fprintf(stderr, "Options:\n");
