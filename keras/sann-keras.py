@@ -4,7 +4,7 @@ import sys, getopt, re, gzip
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Activation
-from keras.models import model_from_yaml
+from keras.models import load_model
 from keras.optimizers import RMSprop
 
 def sann_data_read(fn):
@@ -28,7 +28,7 @@ def sann_data_read(fn):
 	return np.array(x).astype('float32'), row_names, col_names
 
 def main_train(argv):
-	n_hidden, n_epochs, minibatch, lr, outfn = 50, 20, 64, .001, None
+	n_hidden, n_epochs, minibatch, lr, cost_func, outfn = 50, 20, 64, .001, 'binary_crossentropy', None
 
 	def train_help():
 		print("Usage: sann-keras train [options] <input.snd> <output.snd>")
@@ -41,7 +41,7 @@ def main_train(argv):
 		sys.exit(1)
 
 	try:
-		opts, args = getopt.getopt(argv, "h:n:B:o:e:")
+		opts, args = getopt.getopt(argv, "h:n:B:o:e:c")
 	except getopt.GetoptError:
 		train_help()
 	if len(args) < 2:
@@ -53,29 +53,22 @@ def main_train(argv):
 		elif opt == '-B': minibatch = int(arg)
 		elif opt == '-o': outfn = arg
 		elif opt == '-e': lr = float(arg)
+		elif opt == '-c': cost_func = 'categorical_crossentropy'
 
 	x, x_rnames, x_cnames = sann_data_read(args[0])
 	y, y_rnames, y_cnames = sann_data_read(args[1])
 	model = Sequential()
 	model.add(Dense(n_hidden, input_dim=len(x[0]), activation='relu'))
 	model.add(Dense(len(y[0]), activation='sigmoid'))
-	model.compile(loss='binary_crossentropy', optimizer=RMSprop(lr=lr), metrics=['accuracy'])
+	model.compile(loss=cost_func, optimizer=RMSprop(lr=lr), metrics=['accuracy'])
 	model.fit(x, y, nb_epoch=n_epochs, batch_size=minibatch)
-	if outfn:
-		model_yaml = model.to_yaml()
-		with open(outfn + ".kem", "w") as yaml_file:
-		    yaml_file.write(model_yaml)
-		model.save_weights(outfn + ".kew", overwrite=True)
+	if outfn: model.save(outfn)
 
 def main_apply(argv):
 	if len(argv) < 2:
 		print("Usage: sann-keras apply <model> <input.snd>")
 		sys.exit(1)
-	yaml_file = open(argv[0] + ".kem", 'r')
-	loaded_model_yaml = yaml_file.read()
-	yaml_file.close()
-	model = model_from_yaml(loaded_model_yaml)
-	model.load_weights(argv[0] + ".kew")
+	model = load_model(argv[0])
 	x, x_rnames, x_cnames = sann_data_read(argv[1])
 	y = model.predict(x)
 	for i in range(len(y)):
