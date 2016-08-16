@@ -36,6 +36,10 @@ double sann_normal(int *iset, double *gset);
 float sann_sdot(int n, const float *x, const float *y);
 void sann_saxpy(int n, float a, const float *x, float *y);
 
+void sann_SGD(int n, float h, float *t, float *g, sann_gradient_f func, void *data);
+void sann_RMSprop(int n, float h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data);
+void sann_RMSprop2(int n, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data);
+
 void sae_core_randpar(int n_in, int n_hidden, float *t, int scaled);
 void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, int k_sparse, const float *x, float *z, float *y, float *deriv1, int scaled);
 void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, int k_sparse, float r, const float *x, float *d, float *buf, int scaled);

@@ -3,6 +3,13 @@
 #include <math.h>
 #include "sann.h"
 #include "priv.h"
+#ifndef _NO_SSE
+#include <emmintrin.h>
+#endif
+
+/************************
+ * Activation functions *
+ ************************/
 
 #define SANN_TINY 1e-9
 
@@ -42,6 +49,10 @@ sann_activate_f sann_get_af(int type)
 	return 0;
 }
 
+/****************
+ * Gaussian RNG *
+ ****************/
+
 double sann_normal(int *iset, double *gset)
 { 
 	if (*iset == 0) {
@@ -61,6 +72,10 @@ double sann_normal(int *iset, double *gset)
 	}
 }
 
+/*****************
+ * BLAS routines *
+ *****************/
+
 #ifdef _NO_SSE
 void sann_saxpy(int n, float a, const float *x, float *y) // BLAS saxpy
 {
@@ -75,7 +90,6 @@ float sann_sdot(int n, const float *x, const float *y) // BLAS sdot
 	return s;
 }
 #else
-#include <emmintrin.h>
 float sann_sdot(int n, const float *x, const float *y)
 {
 	int i, n4 = n>>2<<2;
@@ -104,5 +118,85 @@ void sann_saxpy(int n, float a, const float *x, float *y)
 		_mm_storeu_ps(&y[i], res_vec);
 	}
 	for (; i < n; ++i) y[i] += a * x[i];
+}
+#endif
+
+/********************
+ * SGD and variants *
+ ********************/
+
+void sann_SGD(int n, float h, float *t, float *g, sann_gradient_f func, void *data)
+{
+	int i;
+	func(n, t, g, data);
+	for (i = 0; i < n; ++i)
+		t[i] -= h * g[i];
+}
+
+#ifdef _NO_SSE
+void sann_RMSprop(int n, float h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i;
+	func(n, t, g, data);
+	for (i = 0; i < n; ++i) {
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= h / sqrt(1e-6 + r[i]) * g[i];
+	}
+}
+void sann_RMSprop2(int n, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i;
+	func(n, t, g, data);
+	for (i = 0; i < n; ++i) {
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= h[i] / sqrt(1e-6 + r[i]) * g[i];
+	}
+}
+#else
+void sann_RMSprop(int n, float h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i, n4 = n>>2<<2;
+	__m128 vh, vg, vr, vt, vd, vd1, tmp, vtiny;
+	vh = _mm_set1_ps(h);
+	vd = _mm_set1_ps(decay);
+	vd1 = _mm_set1_ps(1.0f - decay);
+	vtiny = _mm_set1_ps(1e-6f);
+	func(n, t, g, data);
+	for (i = 0; i < n4; i += 4) {
+		vt = _mm_loadu_ps(&t[i]);
+		vr = _mm_loadu_ps(&r[i]);
+		vg = _mm_loadu_ps(&g[i]);
+		vr = _mm_add_ps(_mm_mul_ps(vd1, _mm_mul_ps(vg, vg)), _mm_mul_ps(vd, vr));
+		_mm_storeu_ps(&r[i], vr);
+		tmp = _mm_sub_ps(vt, _mm_mul_ps(_mm_mul_ps(vh, _mm_rsqrt_ps(_mm_add_ps(vtiny, vr))), vg));
+		_mm_storeu_ps(&t[i], tmp);
+	}
+	for (; i < n; ++i) {
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= h / sqrt(1e-6 + r[i]) * g[i];
+	}
+}
+void sann_RMSprop2(int n, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i, n4 = n>>2<<2;
+	__m128 vh, vg, vr, vt, vd, vd1, tmp, vtiny;
+	vd = _mm_set1_ps(decay);
+	vd1 = _mm_set1_ps(1.0f - decay);
+	vtiny = _mm_set1_ps(1e-6f);
+	func(n, t, g, data);
+	for (i = 0; i < n4; i += 4) {
+		vt = _mm_loadu_ps(&t[i]);
+		vr = _mm_loadu_ps(&r[i]);
+		vg = _mm_loadu_ps(&g[i]);
+		vh = _mm_loadu_ps(&h[i]);
+		vr = _mm_add_ps(_mm_mul_ps(vd1, _mm_mul_ps(vg, vg)), _mm_mul_ps(vd, vr));
+		_mm_storeu_ps(&r[i], vr);
+		tmp = _mm_sub_ps(vt, _mm_mul_ps(_mm_mul_ps(vh, _mm_rsqrt_ps(_mm_add_ps(vtiny, vr))), vg));
+		_mm_storeu_ps(&t[i], tmp);
+	}
+	for (; i < n; ++i) {
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= h[i] / sqrt(1e-6 + r[i]) * g[i];
+	}
 }
 #endif
