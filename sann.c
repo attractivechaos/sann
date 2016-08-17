@@ -199,8 +199,7 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 		if (tc->malgo == SANN_MIN_MINI_SGD) {
 			sann_SGD(n_par, tc->h, m->t, g, mb_gradient, &mb);
 		} else if (tc->malgo == SANN_MIN_MINI_RMSPROP) {
-			if (h) sann_RMSprop2(n_par, h, tc->decay, m->t, g, r, mb_gradient, &mb);
-			else sann_RMSprop(n_par, tc->h, tc->decay, m->t, g, r, mb_gradient, &mb);
+			sann_RMSprop(n_par, tc->h, h, tc->decay, m->t, g, r, mb_gradient, &mb);
 		}
 		mn += mb.n;
 	}
