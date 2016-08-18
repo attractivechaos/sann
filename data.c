@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <zlib.h>
 #include "sann.h"
-#include "priv.h"
 #include "kseq.h"
 KSTREAM_INIT(gzFile, gzread, 16384)
 

@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include "priv.h"
+#include "sann_priv.h"
 
 int main_jacob(int argc, char *argv[])
 {

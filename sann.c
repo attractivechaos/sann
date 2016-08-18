@@ -4,7 +4,7 @@
 #include <float.h>
 #include <stdio.h>
 #include <math.h>
-#include "priv.h"
+#include "sann_priv.h"
 
 int sann_verbose = 3;
 

@@ -2,7 +2,7 @@
 #include <float.h>
 #include <math.h>
 #include "sann.h"
-#include "priv.h"
+#include "sann_priv.h"
 #ifndef _NO_SSE
 #include <emmintrin.h>
 #endif

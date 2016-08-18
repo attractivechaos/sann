@@ -18,7 +18,6 @@ typedef struct smln_buf_t {
 } smln_buf_t;
 
 #define sae_n_par(n_in, n_hidden) ((n_in) * (n_hidden) + (n_in) + (n_hidden))
-#define sae_par2ptr(n_in, n_hidden, p, b1, b2, w) (*(b1) = (p), *(b2) = (p) + (n_hidden), *(w) = (p) + (n_hidden) + (n_in))
 
 #ifdef __cplusplus
 extern "C" {

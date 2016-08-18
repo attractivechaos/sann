@@ -28,10 +28,10 @@ depend:
 # DO NOT DELETE
 
 cli.o: sann.h
-cli_priv.o: priv.h sann.h
-data.o: sann.h priv.h kseq.h
+cli_priv.o: sann_priv.h sann.h
+data.o: sann.h kseq.h
 example.o: sann.h
-math.o: sann.h priv.h
-sae.o: priv.h sann.h ksort.h
-sann.o: priv.h sann.h
-smln.o: priv.h sann.h
+math.o: sann.h sann_priv.h
+sae.o: sann_priv.h sann.h ksort.h
+sann.o: sann_priv.h sann.h
+smln.o: sann_priv.h sann.h
