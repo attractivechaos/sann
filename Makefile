@@ -13,8 +13,8 @@ LIBS=		-lm -lz -lpthread
 
 all:libsann.a $(PROG)
 
-sann:cli.o libsann.a
-		$(CC) $(CFLAGS) $< -o $@ -L. -lsann $(LIBS)
+sann:cli.o cli_priv.o libsann.a
+		$(CC) $(CFLAGS) cli.o cli_priv.o -o $@ -L. -lsann $(LIBS)
 
 libsann.a:$(OBJS)
 		$(AR) -csru $@ $(OBJS)
@@ -28,7 +28,9 @@ depend:
 # DO NOT DELETE
 
 cli.o: sann.h
+cli_priv.o: priv.h sann.h
 data.o: sann.h priv.h kseq.h
+example.o: sann.h
 math.o: sann.h priv.h
 sae.o: priv.h sann.h ksort.h
 sann.o: priv.h sann.h

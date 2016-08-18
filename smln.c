@@ -111,9 +111,10 @@ void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t)
 	free(b); free(w);
 }
 
-void smln_core_jacobian(int n_layers, const int32_t *n_neurons, int w, float *d, smln_buf_t *b)
+void smln_core_jacobian(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, int w, float *d, smln_buf_t *b)
 {
 	int i, j, k;
+	smln_core_forward(n_layers, n_neurons, af, t, x, b);
 	memset(b->delta[n_layers-1], 0, n_neurons[n_layers-1] * sizeof(float));
 	b->delta[n_layers-1][w] = 1.0f;
 	for (k = n_layers - 1; k > 1; --k) { // calculate delta[k-1]

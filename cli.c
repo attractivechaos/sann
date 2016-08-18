@@ -132,8 +132,6 @@ int main_apply(int argc, char *argv[])
 		fprintf(stderr, "[M::%s] mismatch between the input model and the input data\n", __func__);
 		return 1;
 	}
-	y = (float*)malloc((sann_n_out(m) + sae_n_hidden(m)) * sizeof(float));
-	z = y + sann_n_out(m);
 
 	if (m->is_mln && col_names_out) {
 		printf("#sample");
@@ -147,6 +145,8 @@ int main_apply(int argc, char *argv[])
 		putchar('\n');
 	}
 
+	y = (float*)malloc((sann_n_out(m) + sae_n_hidden(m)) * sizeof(float));
+	z = y + sann_n_out(m);
 	for (i = 0, cost = 0.; i < n_samples; ++i) {
 		sann_apply(m, x[i], y, z);
 		cost += sann_cost(sann_n_out(m), x[i], y);
@@ -175,6 +175,8 @@ int main_apply(int argc, char *argv[])
 /*****************
  * Main function *
  *****************/
+
+int main_jacob(int argc, char *argv[]);
 
 void liftrlimit()
 {
@@ -217,6 +219,7 @@ int main(int argc, char *argv[])
 	t_start = realtime();
 	if (strcmp(argv[1], "train") == 0) ret = main_train(argc-1, argv+1);
 	else if (strcmp(argv[1], "apply") == 0) ret = main_apply(argc-1, argv+1);
+	else if (strcmp(argv[1], "jacob") == 0) ret = main_jacob(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[E::%s] unknown command\n", __func__);
 		return 1;
