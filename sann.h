@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r51"
+#define SANN_VERSION "r52"
 
 #include <stdint.h>
 
@@ -37,6 +37,7 @@ typedef struct {
 
 typedef struct {
 	int n_epochs;
+	int max_inc; // stop training if cost on validation samples increases for $max_inc epochs continuously
 	float vfrac; // fraction of samples used for validation
 
 	float L2_par; // L2 regularization, for mlnn only
@@ -52,7 +53,6 @@ typedef struct {
 	int balgo;
 	float h_min, h_max; // for RPROP
 	float rprop_dec, rprop_inc;
-	int max_inc; // stop training if cost on validation samples increases for $max_inc epochs continuously
 } sann_tconf_t;
 
 #ifdef __cplusplus
