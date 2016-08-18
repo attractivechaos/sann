@@ -212,8 +212,9 @@ int main(int argc, char *argv[])
 	if (argc == 1) {
 		fprintf(stderr, "Usage: sann <command> <arguments>\n");
 		fprintf(stderr, "Commands:\n");
-		fprintf(stderr, "  train      train the autoencoder\n");
+		fprintf(stderr, "  train      train the model\n");
 		fprintf(stderr, "  apply      apply the model\n");
+		fprintf(stderr, "  jacob      compute jacobian d{output}/d{input}\n");
 		return 1;
 	}
 	t_start = realtime();
