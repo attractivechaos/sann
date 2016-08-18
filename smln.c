@@ -26,35 +26,33 @@ int smln_n_par(int n_layers, const int32_t *n_neurons)
 
 smln_buf_t *smln_buf_init(int n_layers, const int32_t *n_neurons, cfloat_p t)
 {
-	int k, sum_neurons = 0, n_par;
+	int k, sum_neurons = 0;
 	smln_buf_t *b;
 	float *p;
 
 	b = (smln_buf_t*)calloc(1, sizeof(smln_buf_t));
+	b->out = (float**)calloc(n_layers * 5, sizeof(float*));
+	b->deriv = b->out + n_layers;
+	b->delta = b->deriv + n_layers;
+	b->dw = b->delta + n_layers;
+	b->db = b->dw + n_layers;
+
 	smln_par2ptr(cfloat_p, n_layers, n_neurons, t, b->w, b->b);
-	n_par = smln_n_par(n_layers, n_neurons);
 	for (k = 1; k < n_layers; ++k)
 		sum_neurons += n_neurons[k];
 	p = b->buf = (float*)calloc(n_neurons[0] + sum_neurons * 3, sizeof(float));
-	b->out = (float**)calloc(n_layers, sizeof(float*));
-	b->deriv = (float**)calloc(n_layers, sizeof(float*));
-	b->delta = (float**)calloc(n_layers, sizeof(float*));
 	b->out[0] = p, p += n_neurons[0]; // ->deriv[0] and ->delta[0] are not allocated
 	for (k = 1; k < n_layers; ++k) {
 		b->out[k] = p, p += n_neurons[k];
 		b->deriv[k] = p, p += n_neurons[k];
 		b->delta[k] = p, p += n_neurons[k];
 	}
-	b->dw = (float**)calloc(n_layers, sizeof(float*));
-	b->db = (float**)calloc(n_layers, sizeof(float*));
 	return b;
 }
 
 void smln_buf_destroy(smln_buf_t *b)
 {
-	free(b->w); free(b->b); free(b->dw); free(b->db);
-	free(b->out); free(b->deriv); free(b->delta);
-	free(b->buf); free(b);
+	free(b->w); free(b->b); free(b->out); free(b->buf); free(b);
 }
 
 void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, smln_buf_t *b)
@@ -111,4 +109,20 @@ void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t)
 			w[k][j] = sann_normal(&iset, &gset) / t;
 	}
 	free(b); free(w);
+}
+
+void smln_core_jacobian(int n_layers, const int32_t *n_neurons, int w, float *d, smln_buf_t *b)
+{
+	int i, j, k;
+	memset(b->delta[n_layers-1], 0, n_neurons[n_layers-1] * sizeof(float));
+	b->delta[n_layers-1][w] = 1.0f;
+	for (k = n_layers - 1; k > 1; --k) { // calculate delta[k-1]
+		memset(b->delta[k-1], 0, n_neurons[k-1] * sizeof(float));
+		for (j = 0; j < n_neurons[k]; ++j)
+			sann_saxpy(n_neurons[k-1], b->delta[k][j], b->w[k] + j * n_neurons[k-1], b->delta[k-1]);
+		for (i = 0; i < n_neurons[k-1]; ++i)
+			b->delta[k-1][i] *= b->deriv[k-1][i];
+	}
+	for (j = 0; j < n_neurons[1]; ++j)
+		sann_saxpy(n_neurons[0], b->delta[1][j], b->w[1] + j * n_neurons[0], d);
 }

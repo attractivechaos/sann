@@ -79,8 +79,6 @@ float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 float **sann_data_read(const char *fn, int *n_rows, int *n_cols, char ***row_names, char ***col_names);
 void sann_data_shuffle(int n, float **x, float **y, char **names);
 
-void sann_print(const sann_t *m);
-
 #ifdef __cplusplus
 }
 #endif

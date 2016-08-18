@@ -172,24 +172,9 @@ int main_apply(int argc, char *argv[])
 	return 0;
 }
 
-int main_view(int argc, char *argv[])
-{
-	int c;
-	sann_t *m;
-	char **col_names_in = 0, **col_names_out = 0;
-	while ((c = getopt(argc, argv, "")) >= 0) {
-	}
-	if (argc == optind) {
-		fprintf(stderr, "Usage: sann view [options] <model.snm>\n");
-		return 1;
-	}
-	m = sann_restore(argv[optind], &col_names_in, &col_names_out);
-	sann_print(m);
-	sann_free_names(sann_n_in(m), col_names_in);
-	sann_free_names(sann_n_out(m), col_names_out);
-	sann_destroy(m);
-	return 0;
-}
+/*****************
+ * Main function *
+ *****************/
 
 void liftrlimit()
 {
@@ -227,13 +212,11 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "Commands:\n");
 		fprintf(stderr, "  train      train the autoencoder\n");
 		fprintf(stderr, "  apply      apply the model\n");
-		fprintf(stderr, "  view       print the model parameters\n");
 		return 1;
 	}
 	t_start = realtime();
 	if (strcmp(argv[1], "train") == 0) ret = main_train(argc-1, argv+1);
 	else if (strcmp(argv[1], "apply") == 0) ret = main_apply(argc-1, argv+1);
-	else if (strcmp(argv[1], "view") == 0) ret = main_view(argc-1, argv+1);
 	else {
 		fprintf(stderr, "[E::%s] unknown command\n", __func__);
 		return 1;
