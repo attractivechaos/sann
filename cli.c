@@ -17,18 +17,19 @@ int main_train(int argc, char *argv[])
 	float **x, **y;
 	sann_t *m = 0;
 	sann_tconf_t tc, tc1;
-	char **row_names, **col_names_in = 0, **col_names_out = 0;
+	char **row_names, **col_names_in = 0, **col_names_out = 0, *fnout = 0;
 
 	srand48(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
 	tc1.r = tc1.vfrac = -1.0f;
-	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:")) >= 0) {
+	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:o:")) >= 0) {
 		if (c == 'n') tc1.n_epochs = atoi(optarg);
 		else if (c == 'r') tc1.r = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
 		else if (c == 'e') tc1.h = atof(optarg);
 		else if (c == 'l') tc1.max_inc = atoi(optarg);
 		else if (c == 'B') tc1.mini_batch = atoi(optarg);
+		else if (c == 'o') fnout = optarg;
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
@@ -60,9 +61,10 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "Options:\n");
 		fprintf(stderr, "  Model construction:\n");
 		fprintf(stderr, "    -i FILE       read model from FILE []\n");
-		fprintf(stderr, "    -h INT[,INT]  number of hidden neurons [%d]\n", def_n_hidden);
+		fprintf(stderr, "    -h INT[,INT]  number of hidden neurons (use ',' to add a hidden layer) [%d]\n", def_n_hidden);
 		fprintf(stderr, "    -f INT        hidden activation (1:sigm; 2:tanh; 3:ReLU) [1 for AE; 3 for MLN]\n");
 		fprintf(stderr, "    -s INT        random seed [11]\n");
+		fprintf(stderr, "    -o FILE       save trained model to FILE [stdout]\n");
 		fprintf(stderr, "  Autoencoder specific:\n");
 		fprintf(stderr, "    -r FLOAT      fraction of noises [%g]\n", tc.r);
 		fprintf(stderr, "    -k INT        k-sparse (<=0 or >={-h} to disable) [-1]\n");
@@ -117,7 +119,7 @@ int main_train(int argc, char *argv[])
 
 	sann_data_shuffle(N, x, y, row_names);
 	sann_train(m, &tc, N, x, y);
-	sann_dump(0, m, col_names_in, col_names_out);
+	sann_dump(fnout, m, col_names_in, col_names_out);
 
 	sann_free_names(n_in, col_names_in);
 	sann_free_names(n_out, col_names_out);
@@ -169,7 +171,7 @@ int main_apply(int argc, char *argv[])
 	z = y + sann_n_out(m);
 	for (i = 0, cost = 0.; i < n_samples; ++i) {
 		sann_apply(m, x[i], y, z);
-		cost += sann_cost(sann_n_out(m), x[i], y);
+		if (!m->is_mln) cost += sann_cost(sann_n_out(m), x[i], y);
 		printf("%s", row_names[i]);
 		if (show_hidden && !m->is_mln) {
 			for (j = 0; j < sae_n_hidden(m); ++j)
