@@ -3,9 +3,8 @@
 #include <math.h>
 #include "sann.h"
 #include "sann_priv.h"
-#ifndef _NO_SSE
+#ifdef __SSE__
 #include <emmintrin.h>
-#include <immintrin.h>
 #endif
 
 /************************
@@ -77,20 +76,7 @@ double sann_normal(int *iset, double *gset)
  * BLAS routines *
  *****************/
 
-#ifdef _NO_SSE
-void sann_saxpy(int n, float a, const float *x, float *y) // BLAS saxpy
-{
-	int i;
-	for (i = 0; i < n; ++i) y[i] += a * x[i];
-}
-float sann_sdot(int n, const float *x, const float *y) // BLAS sdot
-{
-	int i;
-	float s = 0.;
-	for (i = 0; i < n; ++i) s += x[i] * y[i];
-	return s;
-}
-#else
+#ifdef __SSE__
 float sann_sdot(int n, const float *x, const float *y)
 {
 	int i, n8 = n>>3<<3;
@@ -132,6 +118,19 @@ void sann_saxpy(int n, float a, const float *x, float *y)
 	}
 	for (; i < n; ++i) y[i] += a * x[i];
 }
+#else
+void sann_saxpy(int n, float a, const float *x, float *y) // BLAS saxpy
+{
+	int i;
+	for (i = 0; i < n; ++i) y[i] += a * x[i];
+}
+float sann_sdot(int n, const float *x, const float *y) // BLAS sdot
+{
+	int i;
+	float s = 0.;
+	for (i = 0; i < n; ++i) s += x[i] * y[i];
+	return s;
+}
 #endif
 
 /********************
@@ -146,18 +145,7 @@ void sann_SGD(int n, float h, float *t, float *g, sann_gradient_f func, void *da
 		t[i] -= h * g[i];
 }
 
-#ifdef _NO_SSE
-void sann_RMSprop(int n, float h0, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
-{
-	int i;
-	func(n, t, g, data);
-	for (i = 0; i < n; ++i) {
-		float lr = h? h[i] : h0;
-		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
-		t[i] -= lr / sqrt(1e-6 + r[i]) * g[i];
-	}
-}
-#else
+#ifdef __SSE__
 void sann_RMSprop(int n, float h0, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
 {
 	int i, n4 = n>>2<<2;
@@ -180,6 +168,17 @@ void sann_RMSprop(int n, float h0, const float *h, float decay, float *t, float 
 	for (; i < n; ++i) {
 		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
 		t[i] -= (h? h[i] : h0) / sqrt(1e-6 + r[i]) * g[i];
+	}
+}
+#else
+void sann_RMSprop(int n, float h0, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data)
+{
+	int i;
+	func(n, t, g, data);
+	for (i = 0; i < n; ++i) {
+		float lr = h? h[i] : h0;
+		r[i] = (1. - decay) * g[i] * g[i] + decay * r[i];
+		t[i] -= lr / sqrt(1e-6 + r[i]) * g[i];
 	}
 }
 #endif

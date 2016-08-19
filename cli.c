@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <float.h>
 #include <math.h>
-#include <xmmintrin.h>
 #include "sann.h"
 
 #define SANN_TRAIN_FUZZY .005
@@ -206,11 +205,17 @@ double realtime()
 	return tp.tv_sec + tp.tv_usec * 1e-6;
 }
 
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
+
 int main(int argc, char *argv[])
 {
 	int ret = 0, i;
 	double t_start;
+#ifdef __SSE__
 	_MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO));
+#endif
 	liftrlimit();
 	if (argc == 1) {
 		fprintf(stderr, "Usage: sann <command> <arguments>\n");
