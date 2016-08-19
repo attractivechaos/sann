@@ -241,13 +241,17 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "  train      train the model\n");
 		fprintf(stderr, "  apply      apply the model\n");
 		fprintf(stderr, "  jacob      compute jacobian d{output}/d{input}\n");
+		fprintf(stderr, "  version    show version number\n");
 		return 1;
 	}
 	t_start = realtime();
 	if (strcmp(argv[1], "train") == 0) ret = main_train(argc-1, argv+1);
 	else if (strcmp(argv[1], "apply") == 0) ret = main_apply(argc-1, argv+1);
 	else if (strcmp(argv[1], "jacob") == 0) ret = main_jacob(argc-1, argv+1);
-	else {
+	else if (strcmp(argv[1], "version") == 0) {
+		puts(SANN_VERSION);
+		return 0;
+	} else {
 		fprintf(stderr, "[E::%s] unknown command\n", __func__);
 		return 1;
 	}
