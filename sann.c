@@ -124,7 +124,7 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 		tc->mini_batch = 10;
 		tc->h = .01f;
 	} else if (tc->malgo == SANN_MIN_MINI_RMSPROP) {
-		tc->mini_batch = 50;
+		tc->mini_batch = 64;
 		tc->h = .001f;
 		tc->decay = .9f;
 	}

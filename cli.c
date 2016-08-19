@@ -22,13 +22,14 @@ int main_train(int argc, char *argv[])
 	srand48(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
 	tc1.r = tc1.vfrac = -1.0f;
-	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:")) >= 0) {
+	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:")) >= 0) {
 		if (c == 'h') n_hidden = atoi(optarg);
 		else if (c == 'n') tc1.n_epochs = atoi(optarg);
 		else if (c == 'r') tc1.r = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
 		else if (c == 'e') tc1.h = atof(optarg);
 		else if (c == 'l') tc1.max_inc = atoi(optarg);
+		else if (c == 'B') tc1.mini_batch = atoi(optarg);
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
@@ -43,6 +44,7 @@ int main_train(int argc, char *argv[])
 	if (tc1.vfrac >= 0.0f) tc.vfrac = tc1.vfrac; 
 	if (tc1.n_epochs > 0) tc.n_epochs = tc1.n_epochs; 
 	if (tc1.max_inc > 0) tc.max_inc = tc1.max_inc;
+	if (tc1.mini_batch > 0) tc.mini_batch = tc1.mini_batch;
 	if (argc == optind) {
 		fprintf(stderr, "Usage: sann train [options] <input.snd> [output.snd]\n");
 		fprintf(stderr, "Options:\n");
@@ -62,6 +64,7 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -T FLOAT    fraction of data used for testing [%g]\n", tc.vfrac);
 		fprintf(stderr, "    -n INT      number of epochs [%d]\n", tc.n_epochs);
 		fprintf(stderr, "    -l INT      stop if validation cost not reduced after INT epochs [%d]\n", tc.max_inc);
+		fprintf(stderr, "    -B INT      size of a minibatch [%d]\n", tc.mini_batch);
 		return 1;
 	}
 
