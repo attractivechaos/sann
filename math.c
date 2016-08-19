@@ -5,6 +5,7 @@
 #include "sann_priv.h"
 #ifndef _NO_SSE
 #include <emmintrin.h>
+#include <immintrin.h>
 #endif
 
 /************************
@@ -92,18 +93,25 @@ float sann_sdot(int n, const float *x, const float *y) // BLAS sdot
 #else
 float sann_sdot(int n, const float *x, const float *y)
 {
-	int i, n4 = n>>2<<2;
-	__m128 x_vec, y_vec, s_vec;
+	int i, n8 = n>>3<<3;
+	__m128 vs1, vs2;
 	float s, t[4];
-	s_vec = _mm_setzero_ps();
-	for (i = 0; i < n4; i += 4) {
-		x_vec = _mm_loadu_ps(&x[i]);
-		y_vec = _mm_loadu_ps(&y[i]);
-		s_vec = _mm_add_ps(s_vec, _mm_mul_ps(x_vec, y_vec));
+	vs1 = _mm_setzero_ps();
+	vs2 = _mm_setzero_ps();
+	for (i = 0; i < n8; i += 8) {
+		__m128 vx1, vx2, vy1, vy2;
+		vx1 = _mm_loadu_ps(&x[i]);
+		vx2 = _mm_loadu_ps(&x[i+4]);
+		vy1 = _mm_loadu_ps(&y[i]);
+		vy2 = _mm_loadu_ps(&y[i+4]);
+		vs1 = _mm_add_ps(vs1, _mm_mul_ps(vx1, vy1));
+		vs2 = _mm_add_ps(vs2, _mm_mul_ps(vx2, vy2));
 	}
-	_mm_storeu_ps(t, s_vec);
-	s = t[0] + t[1] + t[2] + t[3];
-	for (; i < n; ++i) s += x[i] * y[i];
+	for (s = 0.; i < n; ++i) s += x[i] * y[i];
+	_mm_storeu_ps(t, vs1);
+	s += t[0] + t[1] + t[2] + t[3];
+	_mm_storeu_ps(t, vs2);
+	s += t[0] + t[1] + t[2] + t[3];
 	return s;
 }
 void sann_saxpy(int n, float a, const float *x, float *y)
