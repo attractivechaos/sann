@@ -211,7 +211,7 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 	return mb.running_cost / n_out / n;
 }
 
-float sann_test(const sann_t *m, int n, float *const* x, float *const* y0)
+float sann_evaluate(const sann_t *m, int n, float *const* x, float *const* y0)
 {
 	int i, j;
 	float *y;
@@ -255,7 +255,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int N, float *const* x, float
 
 		if (h) memcpy(t_prev, m->t, n_par * sizeof(float));
 		rc = sann_train_epoch(m, tc0, h, n_train, x, y, 0);
-		cost = n_test? sann_test(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
+		cost = n_test? sann_evaluate(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
 		if (sann_verbose >= 3)
 			fprintf(stderr, "[M::%s] epoch:%d running_cost:%g validation_cost:%g\n", __func__, k+1, rc, cost);
 

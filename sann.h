@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r60"
+#define SANN_VERSION "r61"
 
 #include <stdint.h>
 
@@ -45,7 +45,7 @@ typedef struct {
 	int32_t scaled;     //! how to scale the weight; valid values defined by SAE_SC_* macros (AE only)
 	int32_t n_layers;   //! number of layers; always 3 for autoencoder
 	int32_t *n_neurons; //! number of neurons in each layer; of size $n_layers
-	int32_t *af;        //! activation function; valid values defined by SANN_AF_* macros; of size $n_layers-1
+	int32_t *af;        //! activation function; values defined by SANN_AF_*; of size $n_layers-1; output MUST BE sigmoid
 	float *t;           //! array of all parameters; size computed by function sann_n_par()
 } sann_t;
 
@@ -102,21 +102,138 @@ sann_t *sann_init_mln(int n_layers, const int *n_neurons);
  */
 void sann_destroy(sann_t *m);
 
-void sann_apply(const sann_t *m, const float *x, float *y, float *z);
-float sann_cost(int n, const float *y0, const float *y);
+/**
+ * Total number of parameters
+ *
+ * @param m          the model
+ *
+ * @return number of parameters
+ */
 int sann_n_par(const sann_t *m);
 
-int sann_dump(const char *fn, const sann_t *m, char *const* col_names_in, char *const* col_names_out);
-sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out);
-void sann_free_names(int n, char **s);
-void sann_free_vectors(int n, float **x);
+/**
+ * Apply the model to data
+ *
+ * @param m          the model
+ * @param x          input, an array of size sann_n_in(m)
+ * @param y          output, an array of size sann_n_out(m)
+ * @param z          hidden activation, an array of size sae_n_hidden(m) - autoencoder only; use NULL for MLNN
+ */
+void sann_apply(const sann_t *m, const float *x, float *y, float *z);
 
+/**
+ * Compute the sigmoid cost of two output vectors
+ *
+ * @param n          dimension
+ * @param y0         truth
+ * @param y          prediction
+ *
+ * @return averaged sigmoid cost per output neuron
+ */
+float sann_cost(int n, const float *y0, const float *y);
+
+/**
+ * Initialize training parameters
+ *
+ * @param t          training parameters
+ * @param balgo      algorithm to adjust learning rate after a complete batch; values defined SANN_MIN_BATCH_*
+ * @param malgo      mini-batch training algorith; values defined by SANN_MIN_MINI_*
+ */
 void sann_tconf_init(sann_tconf_t *t, int balgo, int malgo);
-int sann_train(sann_t *m, const sann_tconf_t *_tc, int N, float *const* x, float *const* y);
-float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 
+/**
+ * Train for multiple epochs
+ *
+ * This function takes the first $N * (1 - $tc->vfrac) samples as training
+ * samples and the rest as validation samples. It stops if the cost of
+ * validation samples does not imporve after $tc->max_inc epochs. The final
+ * model is taken at the epoch that is over $tc->max_inc and optimizes the
+ * validation samples. To avoid batch effect, it is highly recommended to
+ * shuffle the input with sann_data_shuffle() before calling this function.
+ *
+ * @param m          the model
+ * @param tc         traning parameters
+ * @param N          number of samples
+ * @param x          input data; x[i] is a vector of size sann_n_in(m)
+ * @param y          truth output data; NULL for autoencoder; for mlnn, y[i] is a vector of size sann_n_out(m)
+ *
+ * @return number of epochs
+ */
+int sann_train(sann_t *m, const sann_tconf_t *tc, int N, float *const* x, float *const* y);
+
+/**
+ * Compute the per-neuron cost given truth
+ *
+ * @param m          the model
+ * @param n          number of samples
+ * @param x          input data; x[i] is a vector of size sann_n_in(m)
+ * @param y          truth output; NULL for autoencoder; for mlnn, y[i] is a vector of size sann_n_out(m)
+ *
+ * @return averaged sigmoid cost per sample per output neuron
+ */
+float sann_evaluate(const sann_t *m, int n, float *const* x, float *const* y);
+
+/**
+ * Save the model
+ *
+ * @param fn         output file name; NULL or "-" for stdout
+ * @param m          the model
+ * @param cnames_in  input column names, of size sann_n_in(m); can be NULL if not available
+ * @param cnames_out output column names, of size sann_n_out(m); can be NULL if not available
+ *
+ * @return 0 for success; others for errors
+ */
+int sann_dump(const char *fn, const sann_t *m, char *const* cnames_in, char *const* cnames_out);
+
+/**
+ * Load the model
+ *
+ * @param fn         input file name
+ * @param cnames_in  input column names, of size sann_n_in(m); set to NULL if not available; can be NULL if not needed
+ * @param cnames_out output column names, of size sann_n_out(m); set to NULL if not available; can be NULL if not needed
+ *
+ * @return the model; NULL on error
+ */
+sann_t *sann_restore(const char *fn, char ***cnames_in, char ***cnames_out);
+
+/**
+ * Read data from file in the SANN data format (SND)
+ *
+ * @param fn         file name
+ * @param n_rows     number of samples
+ * @param n_cols     number of data columns
+ * @param row_names  row names (the 1st column of each data row); can be NULL if not needed
+ * @param col_names  column names (the 1st row starting with #); can be NULL if not needed
+ *
+ * @return 2-d array of dimension [n_rows][n_cols]
+ */
 float **sann_data_read(const char *fn, int *n_rows, int *n_cols, char ***row_names, char ***col_names);
+
+/**
+ * Shuffle samples (important when using validation samples)
+ *
+ * @param n          number of samples
+ * @param x          input vectors
+ * @param y          output vectors; can be NULL
+ * @param names      row names; can be NULL
+ */
 void sann_data_shuffle(int n, float **x, float **y, char **names);
+
+/**
+ * Free a list of names
+ *
+ * @param n          number of strings
+ * @param s          pointer to strings
+ */
+void sann_free_names(int n, char **s);
+
+/**
+ * Free a list of vectors
+ *
+ * @param n          number of vectors
+ * @param s          pointer to vectors
+ */
+void sann_free_vectors(int n, float **x);
 
 #ifdef __cplusplus
 }
