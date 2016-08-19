@@ -108,14 +108,19 @@ float sann_sdot(int n, const float *x, const float *y)
 }
 void sann_saxpy(int n, float a, const float *x, float *y)
 {
-	int i, n4 = n>>2<<2;
-	__m128 x_vec, y_vec, a_vec, res_vec;
-	a_vec = _mm_set1_ps(a);
-	for (i = 0; i < n4; i += 4) {
-		x_vec = _mm_loadu_ps(&x[i]);
-		y_vec = _mm_loadu_ps(&y[i]);
-		res_vec = _mm_add_ps(_mm_mul_ps(a_vec, x_vec), y_vec);
-		_mm_storeu_ps(&y[i], res_vec);
+	int i, n8 = n>>3<<3;
+	__m128 va;
+	va = _mm_set1_ps(a);
+	for (i = 0; i < n8; i += 8) {
+		__m128 vx1, vx2, vy1, vy2, vt1, vt2;
+		vx1 = _mm_loadu_ps(&x[i]);
+		vx2 = _mm_loadu_ps(&x[i+4]);
+		vy1 = _mm_loadu_ps(&y[i]);
+		vy2 = _mm_loadu_ps(&y[i+4]);
+		vt1 = _mm_add_ps(_mm_mul_ps(va, vx1), vy1);
+		vt2 = _mm_add_ps(_mm_mul_ps(va, vx2), vy2);
+		_mm_storeu_ps(&y[i], vt1);
+		_mm_storeu_ps(&y[i+4], vt2);
 	}
 	for (; i < n; ++i) y[i] += a * x[i];
 }
