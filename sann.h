@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r58"
+#define SANN_VERSION "r60"
 
 #include <stdint.h>
 
@@ -32,7 +32,7 @@
 //! number of hidden neurons in an autoencoder
 #define sae_n_hidden(m) ((m)->n_neurons[1])
 
-//! number of input neurons in an autoencoder
+//! number of input neurons in an autoencoder (an alias of sann_n_in())
 #define sae_n_in(m) sann_n_in(m)
 
 //! verbose level. 0: no stderr output; 1: error only; 2: error+warning; 3: error+warning+message (default)
@@ -112,7 +112,6 @@ void sann_free_names(int n, char **s);
 void sann_free_vectors(int n, float **x);
 
 void sann_tconf_init(sann_tconf_t *t, int balgo, int malgo);
-float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n, float *const* x, float *const* y, float **_buf);
 int sann_train(sann_t *m, const sann_tconf_t *_tc, int N, float *const* x, float *const* y);
 float sann_test(const sann_t *m, int n, float *const* x, float *const* y);
 

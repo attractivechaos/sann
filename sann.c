@@ -124,7 +124,7 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 		tc->mini_batch = 10;
 		tc->h = .01f;
 	} else if (tc->malgo == SANN_MIN_MINI_RMSPROP) {
-		tc->mini_batch = 64;
+		tc->mini_batch = 50;
 		tc->h = .001f;
 		tc->decay = .9f;
 	}
@@ -259,7 +259,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int N, float *const* x, float
 		if (sann_verbose >= 3)
 			fprintf(stderr, "[M::%s] epoch:%d running_cost:%g validation_cost:%g\n", __func__, k+1, rc, cost);
 
-		if (cost < cost_best) {
+		if (k >= tc0->max_inc && cost < cost_best) {
 			cost_best = cost;
 			sann_cpy(best, m);
 			n_cost_inc = 0, best_epoch = k;
