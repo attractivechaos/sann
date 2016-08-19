@@ -23,8 +23,7 @@ int main_train(int argc, char *argv[])
 	memset(&tc1, 0, sizeof(sann_tconf_t));
 	tc1.r = tc1.vfrac = -1.0f;
 	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:")) >= 0) {
-		if (c == 'h') n_hidden = atoi(optarg);
-		else if (c == 'n') tc1.n_epochs = atoi(optarg);
+		if (c == 'n') tc1.n_epochs = atoi(optarg);
 		else if (c == 'r') tc1.r = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
 		else if (c == 'e') tc1.h = atof(optarg);
@@ -37,6 +36,7 @@ int main_train(int argc, char *argv[])
 		else if (c == 'S') scaled = atoi(optarg);
 		else if (c == 'm') malgo = atoi(optarg);
 		else if (c == 'b') balgo = atoi(optarg);
+		else if (c == 'h') n_hidden = atoi(optarg);
 	}
 	sann_tconf_init(&tc, malgo, balgo);
 	if (tc1.h > 0.0f) tc.h = tc1.h;
@@ -45,6 +45,7 @@ int main_train(int argc, char *argv[])
 	if (tc1.n_epochs > 0) tc.n_epochs = tc1.n_epochs; 
 	if (tc1.max_inc > 0) tc.max_inc = tc1.max_inc;
 	if (tc1.mini_batch > 0) tc.mini_batch = tc1.mini_batch;
+
 	if (argc == optind) {
 		fprintf(stderr, "Usage: sann train [options] <input.snd> [output.snd]\n");
 		fprintf(stderr, "Options:\n");

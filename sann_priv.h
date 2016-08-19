@@ -1,6 +1,11 @@
 #ifndef SANN_PRIV_H
 #define SANN_PRIV_H
 
+/**
+ * This header contains low-level structures and functions. It is not intended
+ * to be included by enduser programs.
+ */
+
 #include "sann.h"
 
 typedef const float *cfloat_p;
