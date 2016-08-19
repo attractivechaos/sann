@@ -4,7 +4,7 @@
 #include "sann.h"
 #include "sann_priv.h"
 #ifdef __SSE__
-#include <emmintrin.h>
+#include <xmmintrin.h>
 #endif
 
 /************************
