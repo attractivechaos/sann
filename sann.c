@@ -113,14 +113,13 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 	tc->vfrac = .1f;
 	tc->malgo = malgo > 0? malgo : SANN_MIN_MINI_RMSPROP;
 	tc->balgo = balgo > 0? balgo : SANN_MIN_BATCH_RPROP;
-	tc->r = .3f;
+	tc->r_in = .3f;
+	tc->r_hidden = 0.0f;
 	tc->L2_par = .001f;
 	tc->h = .01f;
 	tc->h_min = 0.0f, tc->h_max = .1f;
 	tc->rprop_dec = .5f, tc->rprop_inc = 1.2f;
 	tc->max_inc = 10;
-
-	tc->r_in = 0.0f, tc->r_hidden = 0.0f;
 
 	if (tc->malgo == SANN_MIN_MINI_SGD) {
 		tc->mini_batch = 10;
@@ -152,7 +151,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	memset(g, 0, n * sizeof(float));
 	for (i = 0; i < mb->n; ++i) {
 		if (!m->is_mln) {
-			sae_core_backprop(m->n_neurons[0], m->n_neurons[1], p, sann_get_af(m->af[0]), sann_sigm, m->k_sparse, tc->r, mb->x[i], g, mb->buf_ae, m->scaled);
+			sae_core_backprop(m->n_neurons[0], m->n_neurons[1], p, sann_get_af(m->af[0]), sann_sigm, m->k_sparse, tc->r_in, mb->x[i], g, mb->buf_ae, m->scaled);
 			for (k = 0; k < m->n_neurons[0]; ++k)
 				mb->running_cost += sann_sigm_cost(mb->x[i][k], mb->buf_ae[sae_n_in(m) + sae_n_hidden(m) + k]);
 		} else {

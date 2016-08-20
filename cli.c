@@ -21,10 +21,10 @@ int main_train(int argc, char *argv[])
 
 	srand48(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
-	tc1.r = tc1.vfrac = -1.0f;
+	tc1.r_in = tc1.vfrac = -1.0f;
 	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:o:")) >= 0) {
 		if (c == 'n') tc1.n_epochs = atoi(optarg);
-		else if (c == 'r') tc1.r = atof(optarg);
+		else if (c == 'r') tc1.r_in = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
 		else if (c == 'e') tc1.h = atof(optarg);
 		else if (c == 'l') tc1.max_inc = atoi(optarg);
@@ -66,13 +66,13 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -s INT        random seed [11]\n");
 		fprintf(stderr, "    -o FILE       save trained model to FILE [stdout]\n");
 		fprintf(stderr, "  Autoencoder specific:\n");
-		fprintf(stderr, "    -r FLOAT      fraction of noises [%g]\n", tc.r);
 		fprintf(stderr, "    -k INT        k-sparse (<=0 or >={-h} to disable) [-1]\n");
 		fprintf(stderr, "    -S INT        weight scaling (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
 		fprintf(stderr, "  Model training:\n");
 		fprintf(stderr, "    -m INT        minibatch optimization (1:SGD; 2:RMSprop) [%d]\n", SANN_MIN_MINI_RMSPROP);
 		fprintf(stderr, "    -b INT        batch optimization (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
 		fprintf(stderr, "    -e FLOAT      learning rate [.01 for SGD; .001 for RMSprop]\n");
+		fprintf(stderr, "    -r FLOAT      fraction of input dropout [%g]\n", tc.r_in);
 		fprintf(stderr, "    -T FLOAT      fraction of data used for testing [%g]\n", tc.vfrac);
 		fprintf(stderr, "    -n INT        max number of epochs [%d]\n", tc.n_epochs);
 		fprintf(stderr, "    -l INT        stop if validation cost not reduced after INT epochs [%d]\n", tc.max_inc);
@@ -81,7 +81,7 @@ int main_train(int argc, char *argv[])
 	}
 
 	if (tc1.h > 0.0f) tc.h = tc1.h;
-	if (tc1.r >= 0.0f) tc.r = tc1.r; 
+	if (tc1.r_in >= 0.0f) tc.r_in = tc1.r_in; 
 	if (tc1.vfrac >= 0.0f) tc.vfrac = tc1.vfrac; 
 	if (tc1.n_epochs > 0) tc.n_epochs = tc1.n_epochs; 
 	if (tc1.max_inc > 0) tc.max_inc = tc1.max_inc;

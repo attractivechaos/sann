@@ -56,9 +56,9 @@ typedef struct {
 	float vfrac;        //! fraction of samples used for validation
 
 	float L2_par;       //! L2 regularization (MLNN only)
-	float r;            //! ratio of noises (autoencoder only)
+	float r_in;         //! input neuron dropout rate
+	float r_hidden;     //! hidden neuron dropout rate (MLNN only for now; can be applied to AE in principle)
 	float h;            //! learning rate, or starting learning rate
-	float r_in, r_hidden;
 
 	// optimizer for mini-batches
 	int malgo;          //! mini-batch minimization algorithm; values defined by SANN_MIN_MINI_* macros
