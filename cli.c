@@ -21,10 +21,11 @@ int main_train(int argc, char *argv[])
 
 	srand48(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
-	tc1.r_in = tc1.vfrac = -1.0f;
-	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:S:T:m:b:B:o:")) >= 0) {
+	tc1.r_in = tc1.r_hidden = tc1.vfrac = -1.0f;
+	while ((c = getopt(argc, argv, "l:h:n:r:R:e:i:s:f:S:T:m:b:B:o:")) >= 0) {
 		if (c == 'n') tc1.n_epochs = atoi(optarg);
 		else if (c == 'r') tc1.r_in = atof(optarg);
+		else if (c == 'R') tc1.r_hidden = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
 		else if (c == 'e') tc1.h = atof(optarg);
 		else if (c == 'l') tc1.max_inc = atoi(optarg);
@@ -66,10 +67,11 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -o FILE       save trained model to FILE [stdout]\n");
 		fprintf(stderr, "    -S INT        weight scaling for autoencoders (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
 		fprintf(stderr, "  Model training:\n");
-		fprintf(stderr, "    -m INT        minibatch optimization (1:SGD; 2:RMSprop) [%d]\n", SANN_MIN_MINI_RMSPROP);
-		fprintf(stderr, "    -b INT        batch optimization (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
+		fprintf(stderr, "    -m INT        minibatch optimization algorithm (1:SGD; 2:RMSprop) [%d]\n", SANN_MIN_MINI_RMSPROP);
+		fprintf(stderr, "    -b INT        batch optimization algorithm (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
 		fprintf(stderr, "    -e FLOAT      learning rate [.01 for SGD; .001 for RMSprop]\n");
-		fprintf(stderr, "    -r FLOAT      fraction of input dropout [%g]\n", tc.r_in);
+		fprintf(stderr, "    -r FLOAT      dropout rate at the input layer [%g]\n", tc.r_in);
+		fprintf(stderr, "    -R FLOAT      dropout rate at the hidden layers [%g]\n", tc.r_hidden);
 		fprintf(stderr, "    -T FLOAT      fraction of data used for testing [%g]\n", tc.vfrac);
 		fprintf(stderr, "    -n INT        max number of epochs [%d]\n", tc.n_epochs);
 		fprintf(stderr, "    -l INT        stop if validation cost not reduced after INT epochs [%d]\n", tc.max_inc);
