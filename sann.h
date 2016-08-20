@@ -58,6 +58,7 @@ typedef struct {
 	float L2_par;       //! L2 regularization (MLNN only)
 	float r;            //! ratio of noises (autoencoder only)
 	float h;            //! learning rate, or starting learning rate
+	float r_in, r_hidden;
 
 	// optimizer for mini-batches
 	int malgo;          //! mini-batch minimization algorithm; values defined by SANN_MIN_MINI_* macros

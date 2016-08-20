@@ -44,12 +44,12 @@ void sann_SGD(int n, float h, float *t, float *g, sann_gradient_f func, void *da
 void sann_RMSprop(int n, float h0, const float *h, float decay, float *t, float *g, float *r, sann_gradient_f func, void *data);
 
 void sae_core_randpar(int n_in, int n_hidden, float *t, int scaled);
-void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, int k_sparse, const float *x, float *z, float *y, float *deriv1, int scaled);
+void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, int k_sparse, const float *x, float *z, float *y, float *deriv1, int scaled);
 void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, int k_sparse, float r, const float *x, float *d, float *buf, int scaled);
 
 void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t);
-void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, smln_buf_t *b);
-void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, cfloat_p y, float *g, smln_buf_t *b);
+void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, smln_buf_t *b);
+void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, cfloat_p y, float *g, smln_buf_t *b);
 void smln_core_jacobian(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, int w, float *d, smln_buf_t *b);
 
 int smln_n_par(int n_layers, const int32_t *n_neurons);

@@ -23,11 +23,6 @@ to itself. When $G$ is simple, $C$ can be regarded as a subset of $N\times N$
 and therefore, an edge from vertex $i$ to $j$ can be written as an order pair
 $(i,j)$. We only consider simple graphs in this note.
 
-For $i\in N$, $A^+_i=\{j:(i,j)\in C\}$ is the set of \emph{outgoing
-neighbors} of $i$ and $A^-_i=\{j:(j,i)\in C\}$ the set of \emph{incoming
-neighbors}. As $G$ is simple, $|A^+_i|$ equals the outdegree of $i$ and
-$|A^-_i|$ equals the indegree.
-
 In a simple graph $G$, a \emph{walk} is a sequence of vertices $i_1i_2\cdots
 i_k$ such that adjacent vertices form an edge. A \emph{path} is a walk that
 does not have duplicated vertices. A \emph{cycle} is a walk that starts and
@@ -54,18 +49,19 @@ A directed acyclic neural network (DANN) is $\mathcal{N}=(N,C;f,w,b)$, where:
 \end{enumerate}
 
 A DANN takes an input vector $\vec{x}$ of dimension $|N^{\downarrow}|$ and
-generates an output as follows. If $i$ is an input neuron, $t_i=x_i$; otherwise
-$t_i$ is recursively computed with
+generates an output as follows. If $j$ is an input neuron, $t_j=x_j$; otherwise
+$t_j$ is recursively computed with
 \begin{equation}\label{eq:t-recur}
-t_i=\sum_{j\in A^-_i} w_{i\gets j}f(t_j)+b_i
+t_j=\alpha_j\cdot\sum_{\{i\}\to j} w_{j\gets i}f(t_i)+b_j
 \end{equation}
-At output neuron $j$, the output value is $f(t_j)$.  Notably in this form,
-$t_i$ is a function of the inputs of its predecessors. This relationship is
-critical to the derivation of the backpropagation algorithm.
+where $\alpha_j$ is a scaling constant and the sum is carried over all $j$'s
+predecessors. At output neuron $j$, the output value is $f(t_j)$.  Notably in
+this form, $t_i$ is a function of the inputs of its predecessors. This
+relationship is critical to the derivation of the backpropagation algorithm.
 
 \subsection{Backpropagation algorithm}
 
-The \emph{cost function} of DANN is
+The \emph{cost function} for one sample is
 \[
 \mathcal{F} = \sum_{i\in N^{\uparrow}} F(t_i,y_i)
 \]
@@ -82,9 +78,9 @@ For $i\not\in N^{\uparrow}$, we need to recursively expand $t_{\cdot}$ with
 Eq.~(\ref{eq:t-recur}) until we see $t_i$:
 \[
 \delta_i=\left.\frac{\partial\mathcal{F}}{\partial t_i}\right|_{\vec{x},\vec{y}}
-=\sum_{j\in A^+_{i}}\left.\frac{\partial\mathcal{F}}{\partial t_j}\right|_{\vec{x},\vec{y}}\cdot
+=\sum_{\{j\}\gets i}\left.\frac{\partial\mathcal{F}}{\partial t_j}\right|_{\vec{x},\vec{y}}\cdot
 \left.\frac{\partial t_j}{\partial t_i}\right|_{t_i}
-=f'(t_i)\cdot\sum_{j\in A_i^+}w_{j\gets i}\delta_j
+=f'(t_i)\cdot\sum_{\{j\}\gets i}\alpha_jw_{j\gets i}\delta_j
 \]
 With $\delta_i$, we can calculate the gradient of $w$ and $b$
 \[
@@ -92,7 +88,7 @@ With $\delta_i$, we can calculate the gradient of $w$ and $b$
 \]
 \[
 \left.\frac{\partial \mathcal{F}}{\partial w_{j\gets i}}\right|_{\vec{x},\vec{y}}=\frac{\partial \mathcal{F}}{\partial t_j}\cdot\frac{\partial t_j}{\partial w_{j\gets i}}
-	=\delta_j\cdot\frac{\partial}{\partial w_{j\gets i}}\sum_{k\in A^-_j} w_{j\gets k}f(t_k)=\delta_j f(t_i)
+	=\alpha_j\delta_j f(t_i)
 \]
 
 \subsection{Typical activation functions and cost functions}

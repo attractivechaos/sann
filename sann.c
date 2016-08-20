@@ -79,14 +79,14 @@ void sann_apply(const sann_t *m, const float *x, float *y, float *_z)
 	if (m->is_mln) {
 		smln_buf_t *b;
 		b = smln_buf_init(m->n_layers, m->n_neurons, m->t);
-		smln_core_forward(m->n_layers, m->n_neurons, m->af, m->t, x, b);
+		smln_core_forward(m->n_layers, m->n_neurons, m->af, 0.0f, 0.0f, m->t, x, b);
 		memcpy(y, b->out[m->n_layers-1], m->n_neurons[m->n_layers-1] * sizeof(float));
 		smln_buf_destroy(b);
 	} else {
 		float *deriv1, *z;
 		deriv1 = (float*)calloc(m->n_neurons[1], sizeof(float));
 		z = _z? _z : (float*)calloc(sae_n_hidden(m), sizeof(float));
-		sae_core_forward(sae_n_in(m), sae_n_hidden(m), m->t, sann_get_af(m->af[0]), sann_sigm, m->k_sparse, x, z, y, deriv1, m->scaled);
+		sae_core_forward(sae_n_in(m), sae_n_hidden(m), m->t, sann_get_af(m->af[0]), sann_sigm, 0.0f, m->k_sparse, x, z, y, deriv1, m->scaled);
 		if (_z == 0) free(z);
 		free(deriv1);
 	}
@@ -119,6 +119,8 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 	tc->h_min = 0.0f, tc->h_max = .1f;
 	tc->rprop_dec = .5f, tc->rprop_inc = 1.2f;
 	tc->max_inc = 10;
+
+	tc->r_in = 0.0f, tc->r_hidden = 0.0f;
 
 	if (tc->malgo == SANN_MIN_MINI_SGD) {
 		tc->mini_batch = 10;
@@ -154,7 +156,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 			for (k = 0; k < m->n_neurons[0]; ++k)
 				mb->running_cost += sann_sigm_cost(mb->x[i][k], mb->buf_ae[sae_n_in(m) + sae_n_hidden(m) + k]);
 		} else {
-			smln_core_backprop(m->n_layers, m->n_neurons, m->af, p, mb->x[i], mb->y[i], g, mb->buf_mln);
+			smln_core_backprop(m->n_layers, m->n_neurons, m->af, tc->r_in, tc->r_hidden, p, mb->x[i], mb->y[i], g, mb->buf_mln);
 			for (k = 0; k < m->n_neurons[m->n_layers-1]; ++k)
 				mb->running_cost += sann_sigm_cost(mb->y[i][k], mb->buf_mln->out[m->n_layers-1][k]);
 		}

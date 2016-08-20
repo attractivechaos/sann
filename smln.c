@@ -55,26 +55,33 @@ void smln_buf_destroy(smln_buf_t *b)
 	free(b->w); free(b->b); free(b->out); free(b->buf); free(b);
 }
 
-void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, smln_buf_t *b)
+void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, smln_buf_t *b)
 {
-	int j, k;
-	memcpy(b->out[0], x, n_neurons[0] * sizeof(float));
+	int i, j, k;
+	float q[2] = { 1.0f / (1.0f - r_in), 1.0f / (1.0f - r_hidden) };
+	if (r_in > 0.) {
+		for (i = 0; i < n_neurons[0]; ++i)
+			b->out[0][i] = drand48() < r_in? 0.0f : x[i];
+	} else memcpy(b->out[0], x, n_neurons[0] * sizeof(float));
 	for (k = 1; k < n_layers; ++k) {
 		sann_activate_f func = sann_get_af(af[k-1]);
 		for (j = 0; j < n_neurons[k]; ++j)
-			b->out[k][j] = func(sann_sdot(n_neurons[k-1], b->w[k] + j * n_neurons[k-1], b->out[k-1]) + b->b[k][j], &b->deriv[k][j]);
+			if (k < n_layers - 1 && r_hidden > 0.0f && drand48() < r_hidden)
+				b->out[k][j] = b->deriv[k][j] = 0.0f;
+			else b->out[k][j] = func(q[k>1] * sann_sdot(n_neurons[k-1], b->w[k] + j * n_neurons[k-1], b->out[k-1]) + b->b[k][j], &b->deriv[k][j]);
 	}
 }
 
-void smln_core_backward(int n_layers, const int32_t *n_neurons, cfloat_p y, float *g, smln_buf_t *b)
+void smln_core_backward(int n_layers, const int32_t *n_neurons, float r_in, float r_hidden, cfloat_p y, float *g, smln_buf_t *b)
 {
 	int i, j, k;
+	float q[2] = { 1.0f / (1.0f - r_in), 1.0f / (1.0f - r_hidden) };
 	for (j = 0, k = n_layers - 1; j < n_neurons[k]; ++j) // calculate delta[] at the output layer
 		b->delta[k][j] = b->out[k][j] - y[j];
 	for (k = n_layers - 1; k > 1; --k) { // calculate delta[k-1]
 		memset(b->delta[k-1], 0, n_neurons[k-1] * sizeof(float));
 		for (j = 0; j < n_neurons[k]; ++j)
-			sann_saxpy(n_neurons[k-1], b->delta[k][j], b->w[k] + j * n_neurons[k-1], b->delta[k-1]);
+			sann_saxpy(n_neurons[k-1], q[1] * b->delta[k][j], b->w[k] + j * n_neurons[k-1], b->delta[k-1]);
 		for (i = 0; i < n_neurons[k-1]; ++i)
 			b->delta[k-1][i] *= b->deriv[k-1][i];
 	}
@@ -82,15 +89,15 @@ void smln_core_backward(int n_layers, const int32_t *n_neurons, cfloat_p y, floa
 	for (k = 1; k < n_layers; ++k) { // update gradiant
 		sann_saxpy(n_neurons[k], 1., b->delta[k], b->db[k]);
 		for (j = 0; j < n_neurons[k]; ++j)
-			sann_saxpy(n_neurons[k-1], b->delta[k][j], b->out[k-1], b->dw[k] + j * n_neurons[k-1]);
+			sann_saxpy(n_neurons[k-1], q[k>1] * b->delta[k][j], b->out[k-1], b->dw[k] + j * n_neurons[k-1]);
 	}
 }
 
-void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, cfloat_p y, float *g, smln_buf_t *b)
+void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, cfloat_p y, float *g, smln_buf_t *b)
 {
 	assert(af[n_layers-2] == SANN_AF_SIGM);
-	smln_core_forward(n_layers, n_neurons, af, t, x, b);
-	smln_core_backward(n_layers, n_neurons, y, g, b);
+	smln_core_forward(n_layers, n_neurons, af, r_in, r_hidden, t, x, b);
+	smln_core_backward(n_layers, n_neurons, r_in, r_hidden, y, g, b);
 }
 
 void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t)
@@ -114,7 +121,7 @@ void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t)
 void smln_core_jacobian(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, int w, float *d, smln_buf_t *b)
 {
 	int i, j, k;
-	smln_core_forward(n_layers, n_neurons, af, t, x, b);
+	smln_core_forward(n_layers, n_neurons, af, 0.0f, 0.0f, t, x, b);
 	memset(b->delta[n_layers-1], 0, n_neurons[n_layers-1] * sizeof(float));
 	b->delta[n_layers-1][w] = 1.0f;
 	for (k = n_layers - 1; k > 1; --k) { // calculate delta[k-1]
