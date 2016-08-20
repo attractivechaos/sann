@@ -81,6 +81,7 @@ int main_train(int argc, char *argv[])
 
 	if (tc1.h > 0.0f) tc.h = tc1.h;
 	if (tc1.r_in >= 0.0f) tc.r_in = tc1.r_in; 
+	if (tc1.r_hidden >= 0.0f) tc.r_in = tc1.r_hidden; 
 	if (tc1.vfrac >= 0.0f) tc.vfrac = tc1.vfrac; 
 	if (tc1.n_epochs > 0) tc.n_epochs = tc1.n_epochs; 
 	if (tc1.max_inc > 0) tc.max_inc = tc1.max_inc;
