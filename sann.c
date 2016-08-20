@@ -15,7 +15,7 @@ sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
 	sann_t *m;
 	m = (sann_t*)calloc(1, sizeof(sann_t));
 	m->is_mln = 0;
-	m->k_sparse = -1, m->scaled = scaled; // AE-specific parameters
+	m->scaled = scaled; // AE-specific parameters
 	m->n_layers = 3;
 	m->n_neurons = (int32_t*)calloc(m->n_layers, 4);
 	m->n_neurons[0] = m->n_neurons[2] = n_in;
@@ -51,7 +51,7 @@ int sann_n_par(const sann_t *m)
 
 void sann_cpy(sann_t *d, const sann_t *m)
 {
-	d->is_mln = m->is_mln, d->k_sparse = m->k_sparse, d->scaled = m->scaled, d->n_layers = m->n_layers;
+	d->is_mln = m->is_mln, d->scaled = m->scaled, d->n_layers = m->n_layers;
 	d->n_neurons = (int32_t*)realloc(d->n_neurons, m->n_layers * 4);
 	memcpy(d->n_neurons, m->n_neurons, m->n_layers * 4);
 	d->af = (int32_t*)realloc(d->af, (m->n_layers - 1) * 4);
@@ -86,7 +86,7 @@ void sann_apply(const sann_t *m, const float *x, float *y, float *_z)
 		float *deriv1, *z;
 		deriv1 = (float*)calloc(m->n_neurons[1], sizeof(float));
 		z = _z? _z : (float*)calloc(sae_n_hidden(m), sizeof(float));
-		sae_core_forward(sae_n_in(m), sae_n_hidden(m), m->t, sann_get_af(m->af[0]), sann_sigm, 0.0f, m->k_sparse, x, z, y, deriv1, m->scaled);
+		sae_core_forward(sae_n_in(m), sae_n_hidden(m), m->t, sann_get_af(m->af[0]), sann_sigm, 0.0f, x, z, y, deriv1, m->scaled);
 		if (_z == 0) free(z);
 		free(deriv1);
 	}
@@ -151,7 +151,7 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	memset(g, 0, n * sizeof(float));
 	for (i = 0; i < mb->n; ++i) {
 		if (!m->is_mln) {
-			sae_core_backprop(m->n_neurons[0], m->n_neurons[1], p, sann_get_af(m->af[0]), sann_sigm, m->k_sparse, tc->r_in, mb->x[i], g, mb->buf_ae, m->scaled);
+			sae_core_backprop(m->n_neurons[0], m->n_neurons[1], p, sann_get_af(m->af[0]), sann_sigm, tc->r_in, mb->x[i], g, mb->buf_ae, m->scaled);
 			for (k = 0; k < m->n_neurons[0]; ++k)
 				mb->running_cost += sann_sigm_cost(mb->x[i][k], mb->buf_ae[sae_n_in(m) + sae_n_hidden(m) + k]);
 		} else {

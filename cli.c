@@ -12,7 +12,7 @@
 
 int main_train(int argc, char *argv[])
 {
-	int c, i, N, n_in, n_out = 0, af = -1, k_sparse = -1, scaled = SAE_SC_SQRT, malgo = 0, balgo = 0;
+	int c, i, N, n_in, n_out = 0, af = -1, scaled = SAE_SC_SQRT, malgo = 0, balgo = 0;
 	int32_t n_layers = 3, *n_neurons, *o_h_neurons = 0, o_h_layers = 0, def_n_hidden = 50;
 	float **x, **y;
 	sann_t *m = 0;
@@ -22,7 +22,7 @@ int main_train(int argc, char *argv[])
 	srand48(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
 	tc1.r_in = tc1.vfrac = -1.0f;
-	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:k:S:T:m:b:B:o:")) >= 0) {
+	while ((c = getopt(argc, argv, "l:h:n:r:e:i:s:f:S:T:m:b:B:o:")) >= 0) {
 		if (c == 'n') tc1.n_epochs = atoi(optarg);
 		else if (c == 'r') tc1.r_in = atof(optarg);
 		else if (c == 'T') tc1.vfrac = atof(optarg);
@@ -33,7 +33,6 @@ int main_train(int argc, char *argv[])
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
 		else if (c == 's') srand48(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
-		else if (c == 'k') k_sparse = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
 		else if (c == 'm') malgo = atoi(optarg);
 		else if (c == 'b') balgo = atoi(optarg);
@@ -65,9 +64,7 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -f INT        hidden activation (1:sigm; 2:tanh; 3:ReLU) [1 for AE; 3 for MLN]\n");
 		fprintf(stderr, "    -s INT        random seed [11]\n");
 		fprintf(stderr, "    -o FILE       save trained model to FILE [stdout]\n");
-		fprintf(stderr, "  Autoencoder specific:\n");
-		fprintf(stderr, "    -k INT        k-sparse (<=0 or >={-h} to disable) [-1]\n");
-		fprintf(stderr, "    -S INT        weight scaling (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
+		fprintf(stderr, "    -S INT        weight scaling for autoencoders (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
 		fprintf(stderr, "  Model training:\n");
 		fprintf(stderr, "    -m INT        minibatch optimization (1:SGD; 2:RMSprop) [%d]\n", SANN_MIN_MINI_RMSPROP);
 		fprintf(stderr, "    -b INT        batch optimization (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
@@ -105,7 +102,6 @@ int main_train(int argc, char *argv[])
 		if (optind + 1 == argc) { // AE
 			m = sann_init_ae(n_in, o_h_neurons[0], scaled);
 			if (af > 0) m->af[0] = af;
-			if (k_sparse > 0) m->k_sparse = k_sparse;
 		} else {
 			n_layers = o_h_layers + 2;
 			n_neurons = (int32_t*)alloca(n_layers * 4);

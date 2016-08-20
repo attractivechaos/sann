@@ -5,12 +5,10 @@
 #include <stdio.h>
 #include <math.h>
 #include "sann_priv.h"
-#include "ksort.h"
-KSORT_INIT_GENERIC(float)
 
 #define sae_par2ptr(n_in, n_hidden, p, b1, b2, w) (*(b1) = (p), *(b2) = (p) + (n_hidden), *(w) = (p) + (n_hidden) + (n_in))
 
-void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, int k_sparse, const float *x, float *z, float *y, float *deriv1, int scaled)
+void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, const float *x, float *z, float *y, float *deriv1, int scaled)
 {
 	int j, k;
 	float tmp, a01 = 1., a12 = 1.;
@@ -20,24 +18,18 @@ void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1
 	a01 *= 1.0f / (1.0f - r);
 	sae_par2ptr(n_in, n_hidden, t, &b1, &b2, &w10);
 	memcpy(y, b2, n_in * sizeof(float));
-	for (j = 0; j < n_hidden; ++j) { // from the input layer to the hidden layer
+	for (j = 0; j < n_hidden; ++j) {
 		const float *w10j = w10 + j * n_in;
-		z[j] = deriv1[j] = a01 * sann_sdot(n_in, x, w10j) + b1[j];
-	}
-	tmp = k_sparse > 0 && k_sparse < n_hidden? ks_ksmall(float, n_hidden, deriv1, n_hidden - k_sparse) : -FLT_MAX;
-	for (j = 0; j < n_hidden; ++j) { // from the hidden layer to the output layer
-		if (z[j] >= tmp) {
-			const float *w10j = w10 + j * n_in;
-			z[j] = f1(z[j], &deriv1[j]);
-			sann_saxpy(n_in, a12 * z[j], w10j, y);
-		} else z[j] = 0., deriv1[j] = 0.;
+		tmp = a01 * sann_sdot(n_in, x, w10j) + b1[j];
+		z[j] = f1(tmp, &deriv1[j]);
+		sann_saxpy(n_in, a12 * z[j], w10j, y);
 	}
 	for (k = 0; k < n_in; ++k)
 		y[k] = f2(y[k], &tmp);
 }
 
 // buf[] is at least 3*n_in+2*n_hidden in length
-void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, int k_sparse, float r, const float *x, float *d, float *buf, int scaled)
+void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, const float *x, float *d, float *buf, int scaled)
 {
 	int i, j, k;
 	float *db1, *db2, *dw10, *out0, *out1, *out2, *delta1, *delta2, a01 = 1., a12 = 1.;
@@ -56,22 +48,21 @@ void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f
 			out0[i] = drand48() < r? 0. : x[i];
 	} else memcpy(out0, x, n_in * sizeof(float));
 	// forward calculation
-	sae_core_forward(n_in, n_hidden, t, f1, f2, r, k_sparse, out0, out1, out2, delta1, scaled);
+	sae_core_forward(n_in, n_hidden, t, f1, f2, r, out0, out1, out2, delta1, scaled);
 	// backward calculation
 	for (k = 0; k < n_in; ++k) // delta at the output layer
 		delta2[k] = out2[k] - x[k]; // use x, not out0
 	for (j = 0; j < n_hidden; ++j) { // delta at the hidden layer
 		const float *w10j = w10 + j * n_in;
-		if (delta1[j] != 0.)
-			delta1[j] *= a12 * sann_sdot(n_in, w10j, delta2); // now, delta1 is set
+		delta1[j] *= a12 * sann_sdot(n_in, w10j, delta2); // now, delta1 is set
 	}
 	// update differences
 	sann_saxpy(n_in, 1., delta2, db2);
 	sann_saxpy(n_hidden, 1., delta1, db1);
 	for (j = 0; j < n_hidden; ++j) {
 		float *dw10j = dw10 + j * n_in;
-		if (out1[j] != 0.)   sann_saxpy(n_in, a12 * out1[j], delta2, dw10j);
-		if (delta1[j] != 0.) sann_saxpy(n_in, a01 * delta1[j], out0, dw10j); // TODO: should we use x or out0 here???
+		sann_saxpy(n_in, a12 * out1[j], delta2, dw10j);
+		sann_saxpy(n_in, a01 * delta1[j], out0, dw10j);
 	}
 }
 

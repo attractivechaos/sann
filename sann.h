@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r63"
+#define SANN_VERSION "r66"
 
 #include <stdint.h>
 
@@ -41,7 +41,6 @@ extern int sann_verbose;
 //! SANN model
 typedef struct {
 	int32_t is_mln;     //! whether the model is MLNN or AE 
-	int32_t k_sparse;   //! at most $k_sparse hidden neurons activate (AE only; see also arXiv:1312.5663)
 	int32_t scaled;     //! how to scale the weight; valid values defined by SAE_SC_* macros (AE only)
 	int32_t n_layers;   //! number of layers; always 3 for autoencoder
 	int32_t *n_neurons; //! number of neurons in each layer; of size $n_layers

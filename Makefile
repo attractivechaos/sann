@@ -33,6 +33,6 @@ data.o: sann.h kseq.h
 example.o: sann.h
 io.o: sann.h
 math.o: sann.h sann_priv.h
-sae.o: sann_priv.h sann.h ksort.h
+sae.o: sann_priv.h sann.h
 sann.o: sann_priv.h sann.h
 smln.o: sann_priv.h sann.h
