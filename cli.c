@@ -95,7 +95,7 @@ int main_train(int argc, char *argv[])
 	} else y = 0;
 
 	if (m) {
-		if ((m->is_mln && optind+1 == argc) || (!m->is_mln && optind+1 < argc))
+		if ((m->is_fnn && optind+1 == argc) || (!m->is_fnn && optind+1 < argc))
 			fprintf(stderr, "[M::%s] mismatch between the input model and the command line\n", __func__);
 		if (sann_n_in(m) != n_in) {
 			fprintf(stderr, "[E::%s] the model does not match the input: %d != %d\n", __func__, sann_n_in(m), n_in);
@@ -110,7 +110,7 @@ int main_train(int argc, char *argv[])
 			n_neurons = (int32_t*)alloca(n_layers * 4);
 			memcpy(n_neurons + 1, o_h_neurons, o_h_layers * 4);
 			n_neurons[0] = n_in, n_neurons[n_layers-1] = n_out;
-			m = sann_init_mln(n_layers, n_neurons);
+			m = sann_init_fnn(n_layers, n_neurons);
 			if (af > 0)
 				for (i = 0; i < m->n_layers - 2; ++i) m->af[i] = af;
 		}
@@ -154,12 +154,12 @@ int main_apply(int argc, char *argv[])
 		return 1;
 	}
 
-	if (m->is_mln && col_names_out) {
+	if (m->is_fnn && col_names_out) {
 		printf("#sample");
 		for (i = 0; i < sann_n_out(m); ++i)
 			printf("\t%s", col_names_out[i]);
 		putchar('\n');
-	} else if (!m->is_mln && !show_hidden && col_names_in) {
+	} else if (!m->is_fnn && !show_hidden && col_names_in) {
 		printf("#sample");
 		for (i = 0; i < sann_n_in(m); ++i)
 			printf("\t%s", col_names_in[i]);
@@ -170,9 +170,9 @@ int main_apply(int argc, char *argv[])
 	z = y + sann_n_out(m);
 	for (i = 0, cost = 0.; i < n_samples; ++i) {
 		sann_apply(m, x[i], y, z);
-		if (!m->is_mln) cost += sann_cost(sann_n_out(m), x[i], y);
+		if (!m->is_fnn) cost += sann_cost(sann_n_out(m), x[i], y);
 		printf("%s", row_names[i]);
-		if (show_hidden && !m->is_mln) {
+		if (show_hidden && !m->is_fnn) {
 			for (j = 0; j < sae_n_hidden(m); ++j)
 				printf("\t%g", z[j] + 1.0f - 1.0f);
 		} else {
@@ -187,7 +187,7 @@ int main_apply(int argc, char *argv[])
 	sann_free_names(sann_n_in(m), col_names_in);
 	sann_free_names(sann_n_out(m), col_names_out);
 
-	if (!m->is_mln) fprintf(stderr, "[M::%s] cost = %g\n", __func__, cost / n_samples);
+	if (!m->is_fnn) fprintf(stderr, "[M::%s] cost = %g\n", __func__, cost / n_samples);
 
 	sann_destroy(m);
 	return 0;

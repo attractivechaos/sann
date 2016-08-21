@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r75"
+#define SANN_VERSION "r76"
 
 #include <stdint.h>
 
@@ -40,7 +40,7 @@ extern int sann_verbose;
 
 //! SANN model
 typedef struct {
-	int32_t is_mln;     //! whether the model is MLNN or AE 
+	int32_t is_fnn;     //! whether the model is FNN or AE 
 	int32_t scaled;     //! how to scale the weight; valid values defined by SAE_SC_* macros (AE only)
 	int32_t n_layers;   //! number of layers; always 3 for autoencoder
 	int32_t *n_neurons; //! n_neurons[k] is the number of neurons at layer k; of size $n_layers
@@ -54,9 +54,9 @@ typedef struct {
 	int max_inc;        //! stop training if cost on validation samples increases for $max_inc epochs continuously
 	float vfrac;        //! fraction of samples used for validation
 
-	float L2_par;       //! L2 regularization (MLNN only)
+	float L2_par;       //! L2 regularization (FNN only)
 	float r_in;         //! input neuron dropout rate
-	float r_hidden;     //! hidden neuron dropout rate (MLNN only for now; can be applied to AE in principle)
+	float r_hidden;     //! hidden neuron dropout rate (FNN only for now; can be applied to AE in principle)
 	float h;            //! learning rate, or starting learning rate
 
 	// optimizer for mini-batches
@@ -86,14 +86,14 @@ extern "C" {
 sann_t *sann_init_ae(int n_in, int n_hidden, int scaled);
 
 /**
- * Initialize a multi-layer/feedforward neuron network
+ * Initialize a feedforward/multi-layer neuron network
  *
  * @param n_layers   number of layers
  * @param n_neurons  number of neurons in each layer, an array of size $n_layers
  *
  * @return pointer to the model
  */
-sann_t *sann_init_mln(int n_layers, const int *n_neurons);
+sann_t *sann_init_fnn(int n_layers, const int *n_neurons);
 
 /**
  * Deallocate a model
@@ -117,7 +117,7 @@ int sann_n_par(const sann_t *m);
  * @param m          the model
  * @param x          input, an array of size sann_n_in(m)
  * @param y          output, an array of size sann_n_out(m)
- * @param z          hidden activation, an array of size sae_n_hidden(m) - autoencoder only; use NULL for MLNN
+ * @param z          hidden activation, an array of size sae_n_hidden(m) - autoencoder only; use NULL for FNN
  */
 void sann_apply(const sann_t *m, const float *x, float *y, float *z);
 
@@ -155,7 +155,7 @@ void sann_tconf_init(sann_tconf_t *t, int balgo, int malgo);
  * @param tc         traning parameters
  * @param N          number of samples
  * @param x          input data; x[i] is a vector of size sann_n_in(m)
- * @param y          truth output data; NULL for autoencoder; for mlnn, y[i] is a vector of size sann_n_out(m)
+ * @param y          truth output data; NULL for autoencoder; for FNN, y[i] is a vector of size sann_n_out(m)
  *
  * @return number of epochs
  */
@@ -167,7 +167,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc, int N, float *const* x, float 
  * @param m          the model
  * @param n          number of samples
  * @param x          input data; x[i] is a vector of size sann_n_in(m)
- * @param y          truth output; NULL for autoencoder; for mlnn, y[i] is a vector of size sann_n_out(m)
+ * @param y          truth output; NULL for autoencoder; for FNN, y[i] is a vector of size sann_n_out(m)
  *
  * @return averaged sigmoid cost per sample per output neuron
  */

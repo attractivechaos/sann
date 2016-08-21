@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
 	sann_data_shuffle(N, x, y, 0);   // to avoid biased validation set
 	// initialize the network
 	n_neurons[1] = 50;               // number of hidden neurons
-	m = sann_init_mln(3, n_neurons); // initialize a multi-layer network
+	m = sann_init_fnn(3, n_neurons); // initialize a feedforward network
 	// training
 	sann_tconf_init(&conf, 0, 0);    // set training parameters
 	sann_train(m, &conf, N, x, y);   // actual training

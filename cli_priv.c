@@ -11,7 +11,7 @@ int main_jacob(int argc, char *argv[])
 	float **x, **y;
 	char **rn, **cn_in, **cn_out;
 	sann_t *m;
-	smln_buf_t *b;
+	sfnn_buf_t *b;
 
 	while ((c = getopt(argc, argv, "T")) >= 0) {
 		if (c == 'T') trans = 1;
@@ -26,7 +26,7 @@ int main_jacob(int argc, char *argv[])
 	y = sann_data_read(argv[optind+2], &N_out, &n_out, 0, 0);
 	assert(n_in == sann_n_in(m) && n_out == sann_n_out(m) && N == N_out);
 
-	b = smln_buf_init(m->n_layers, m->n_neurons, m->t);
+	b = sfnn_buf_init(m->n_layers, m->n_neurons, m->t);
 	if (!trans) {
 		float *d;
 		if (cn_in) {
@@ -40,7 +40,7 @@ int main_jacob(int argc, char *argv[])
 			else printf("o%d", k+1);
 			memset(d, 0, sann_n_in(m) * sizeof(float));
 			for (j = 0; j < N; ++j)
-				smln_core_jacobian(m->n_layers, m->n_neurons, m->af, m->t, x[j], k, d, b);
+				sfnn_core_jacobian(m->n_layers, m->n_neurons, m->af, m->t, x[j], k, d, b);
 			for (i = 0; i < n_in; ++i)
 				printf("\t%g", d[i] / N);
 			putchar('\n');
@@ -57,7 +57,7 @@ int main_jacob(int argc, char *argv[])
 		for (k = 0; k < n_out; ++k) {
 			d[k] = (float*)calloc(n_in, sizeof(float));
 			for (j = 0; j < N; ++j)
-				smln_core_jacobian(m->n_layers, m->n_neurons, m->af, m->t, x[j], k, d[k], b);
+				sfnn_core_jacobian(m->n_layers, m->n_neurons, m->af, m->t, x[j], k, d[k], b);
 		}
 		for (i = 0; i < n_in; ++i) {
 			if (cn_in) printf("%s", cn_in[i]);
@@ -68,7 +68,7 @@ int main_jacob(int argc, char *argv[])
 		}
 		sann_free_vectors(n_out, d);
 	}
-	smln_buf_destroy(b);
+	sfnn_buf_destroy(b);
 
 	sann_free_names(N, rn);
 	sann_free_vectors(N, x);

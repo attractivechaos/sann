@@ -15,12 +15,12 @@ typedef const char *ccstr_p;
 typedef float (*sann_activate_f)(float t, float *deriv);
 typedef void (*sann_gradient_f)(int n, const float *x, float *gradient, void *data);
 
-typedef struct smln_buf_t {
+typedef struct sfnn_buf_t {
 	cfloat_p *w, *b;
 	float_p *db, *dw;
 	float *buf;
 	float **out, **deriv, **delta;
-} smln_buf_t;
+} sfnn_buf_t;
 
 #define sae_n_par(n_in, n_hidden) ((n_in) * (n_hidden) + (n_in) + (n_hidden))
 
@@ -47,14 +47,14 @@ void sae_core_randpar(int n_in, int n_hidden, float *t, int scaled);
 void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, const float *x, float *z, float *y, float *deriv1, int scaled);
 void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, const float *x, float *d, float *buf, int scaled);
 
-void smln_core_randpar(int n_layers, const int32_t *n_neurons, float *t);
-void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, smln_buf_t *b);
-void smln_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, cfloat_p y, float *g, smln_buf_t *b);
-void smln_core_jacobian(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, int w, float *d, smln_buf_t *b);
+void sfnn_core_randpar(int n_layers, const int32_t *n_neurons, float *t);
+void sfnn_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, sfnn_buf_t *b);
+void sfnn_core_backprop(int n_layers, const int32_t *n_neurons, const int32_t *af, float r_in, float r_hidden, cfloat_p t, cfloat_p x, cfloat_p y, float *g, sfnn_buf_t *b);
+void sfnn_core_jacobian(int n_layers, const int32_t *n_neurons, const int32_t *af, cfloat_p t, cfloat_p x, int w, float *d, sfnn_buf_t *b);
 
-int smln_n_par(int n_layers, const int32_t *n_neurons);
-smln_buf_t *smln_buf_init(int n_layers, const int32_t *n_neurons, cfloat_p t);
-void smln_buf_destroy(smln_buf_t *b);
+int sfnn_n_par(int n_layers, const int32_t *n_neurons);
+sfnn_buf_t *sfnn_buf_init(int n_layers, const int32_t *n_neurons, cfloat_p t);
+void sfnn_buf_destroy(sfnn_buf_t *b);
 
 #ifdef __cplusplus
 }

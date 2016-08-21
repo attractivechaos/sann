@@ -3,7 +3,7 @@ CFLAGS=		-g -Wall -Wc++-compat -O2
 CPPFLAGS=
 ZLIB_FLAGS=	-DHAVE_ZLIB   # comment out this line to drop the zlib dependency
 INCLUDES=	-I.
-OBJS=		math.o sae.o smln.o sann.o data.o io.o
+OBJS=		math.o sae.o sfnn.o sann.o data.o io.o
 PROG=		sann
 LIBS=		-lm -lz
 
@@ -39,4 +39,4 @@ io.o: sann.h
 math.o: sann.h sann_priv.h
 sae.o: sann_priv.h sann.h
 sann.o: sann_priv.h sann.h
-smln.o: sann_priv.h sann.h
+sfnn.o: sann_priv.h sann.h

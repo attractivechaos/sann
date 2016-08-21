@@ -29,7 +29,7 @@ int sann_dump(const char *fn, const sann_t *m, char *const* col_names_in, char *
 	fp = fn && strcmp(fn, "-")? fopen(fn, "w") : stdout;
 	if (fp == 0) return -1;
 	fwrite(SANN_MAGIC, 1, 4, fp);
-	fwrite(&m->is_mln, 4, 1, fp);
+	fwrite(&m->is_fnn, 4, 1, fp);
 	fwrite(&tmp, 4, 1, fp);
 	fwrite(&m->scaled, 4, 1, fp);
 	fwrite(&m->n_layers, 4, 1, fp);
@@ -83,7 +83,7 @@ sann_t *sann_restore(const char *fn, char ***col_names_in, char ***col_names_out
 	fread(magic, 1, 4, fp);
 	if (strncmp(magic, SANN_MAGIC, 4) != 0) return 0;
 	m = (sann_t*)calloc(1, sizeof(sann_t));
-	fread(&m->is_mln, 4, 1, fp);
+	fread(&m->is_fnn, 4, 1, fp);
 	fread(&tmp, 4, 1, fp);
 	fread(&m->scaled, 4, 1, fp);
 	fread(&m->n_layers, 4, 1, fp);

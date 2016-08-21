@@ -14,7 +14,7 @@ sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
 {
 	sann_t *m;
 	m = (sann_t*)calloc(1, sizeof(sann_t));
-	m->is_mln = 0;
+	m->is_fnn = 0;
 	m->scaled = scaled; // AE-specific parameters
 	m->n_layers = 3;
 	m->n_neurons = (int32_t*)calloc(m->n_layers, 4);
@@ -27,31 +27,31 @@ sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
 	return m;
 }
 
-sann_t *sann_init_mln(int n_layers, const int *n_neurons)
+sann_t *sann_init_fnn(int n_layers, const int *n_neurons)
 {
 	int i;
 	sann_t *m;
 	m = (sann_t*)calloc(1, sizeof(sann_t));
-	m->is_mln = 1;
+	m->is_fnn = 1;
 	m->n_layers = n_layers;
 	m->n_neurons = (int32_t*)calloc(n_layers, 4);
 	for (i = 0; i < n_layers; ++i) m->n_neurons[i] = n_neurons[i];
 	m->af = (int32_t*)calloc(n_layers - 1, 4);
 	for (i = 0; i < n_layers - 2; ++i) m->af[i] = SANN_AF_ReLU;
 	m->af[i] = SANN_AF_SIGM;
-	m->t = (float*)calloc(smln_n_par(m->n_layers, m->n_neurons), sizeof(float));
-	smln_core_randpar(m->n_layers, m->n_neurons, m->t);
+	m->t = (float*)calloc(sfnn_n_par(m->n_layers, m->n_neurons), sizeof(float));
+	sfnn_core_randpar(m->n_layers, m->n_neurons, m->t);
 	return m;
 }
 
 int sann_n_par(const sann_t *m)
 {
-	return m->is_mln? smln_n_par(m->n_layers, m->n_neurons) : sae_n_par(m->n_neurons[0], m->n_neurons[1]);
+	return m->is_fnn? sfnn_n_par(m->n_layers, m->n_neurons) : sae_n_par(m->n_neurons[0], m->n_neurons[1]);
 }
 
 void sann_cpy(sann_t *d, const sann_t *m)
 {
-	d->is_mln = m->is_mln, d->scaled = m->scaled, d->n_layers = m->n_layers;
+	d->is_fnn = m->is_fnn, d->scaled = m->scaled, d->n_layers = m->n_layers;
 	d->n_neurons = (int32_t*)realloc(d->n_neurons, m->n_layers * 4);
 	memcpy(d->n_neurons, m->n_neurons, m->n_layers * 4);
 	d->af = (int32_t*)realloc(d->af, (m->n_layers - 1) * 4);
@@ -76,12 +76,12 @@ void sann_destroy(sann_t *m)
 
 void sann_apply(const sann_t *m, const float *x, float *y, float *_z)
 {
-	if (m->is_mln) {
-		smln_buf_t *b;
-		b = smln_buf_init(m->n_layers, m->n_neurons, m->t);
-		smln_core_forward(m->n_layers, m->n_neurons, m->af, 0.0f, 0.0f, m->t, x, b);
+	if (m->is_fnn) {
+		sfnn_buf_t *b;
+		b = sfnn_buf_init(m->n_layers, m->n_neurons, m->t);
+		sfnn_core_forward(m->n_layers, m->n_neurons, m->af, 0.0f, 0.0f, m->t, x, b);
 		memcpy(y, b->out[m->n_layers-1], m->n_neurons[m->n_layers-1] * sizeof(float));
-		smln_buf_destroy(b);
+		sfnn_buf_destroy(b);
 	} else {
 		float *deriv1, *z;
 		deriv1 = (float*)calloc(m->n_neurons[1], sizeof(float));
@@ -138,7 +138,7 @@ typedef struct {
 	int n;
 	cfloat_p *x, *y;
 	float *buf_ae;
-	smln_buf_t *buf_mln;
+	sfnn_buf_t *buf_fnn;
 } minibatch_t;
 
 static void mb_gradient(int n, const float *p, float *g, void *data)
@@ -150,17 +150,17 @@ static void mb_gradient(int n, const float *p, float *g, void *data)
 	float t = 1. / mb->n;
 	memset(g, 0, n * sizeof(float));
 	for (i = 0; i < mb->n; ++i) {
-		if (!m->is_mln) {
+		if (!m->is_fnn) {
 			sae_core_backprop(m->n_neurons[0], m->n_neurons[1], p, sann_get_af(m->af[0]), sann_sigm, tc->r_in, mb->x[i], g, mb->buf_ae, m->scaled);
 			for (k = 0; k < m->n_neurons[0]; ++k)
 				mb->running_cost += sann_sigm_cost(mb->x[i][k], mb->buf_ae[sae_n_in(m) + sae_n_hidden(m) + k]);
 		} else {
-			smln_core_backprop(m->n_layers, m->n_neurons, m->af, tc->r_in, tc->r_hidden, p, mb->x[i], mb->y[i], g, mb->buf_mln);
+			sfnn_core_backprop(m->n_layers, m->n_neurons, m->af, tc->r_in, tc->r_hidden, p, mb->x[i], mb->y[i], g, mb->buf_fnn);
 			for (k = 0; k < m->n_neurons[m->n_layers-1]; ++k)
-				mb->running_cost += sann_sigm_cost(mb->y[i][k], mb->buf_mln->out[m->n_layers-1][k]);
+				mb->running_cost += sann_sigm_cost(mb->y[i][k], mb->buf_fnn->out[m->n_layers-1][k]);
 		}
 	}
-	if (m->is_mln) {
+	if (m->is_fnn) {
 		for (i = 0; i < n; ++i)
 			g[i] = (g[i] + mb->tc->L2_par * p[i]) * t;
 	} else for (i = 0; i < n; ++i) g[i] *= t;
@@ -175,7 +175,7 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 
 	sx = (cfloat_p*)malloc(n * sizeof(cfloat_p));
 	memcpy(sx, x, n * sizeof(cfloat_p));
-	if (m->is_mln) {
+	if (m->is_fnn) {
 		sy = (cfloat_p*)malloc(n * sizeof(cfloat_p));
 		memcpy(sy, y, n * sizeof(cfloat_p));
 	}
@@ -191,8 +191,8 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 	g = buf, r = g + n_par;
 
 	mb.m = m, mb.tc = tc, mb.running_cost = 0.;
-	mb.buf_mln = m->is_mln? smln_buf_init(m->n_layers, m->n_neurons, m->t) : 0;
-	mb.buf_ae = !m->is_mln? (float*)malloc(sae_buf_size(sae_n_in(m), sae_n_hidden(m)) * sizeof(float)) : 0;
+	mb.buf_fnn = m->is_fnn? sfnn_buf_init(m->n_layers, m->n_neurons, m->t) : 0;
+	mb.buf_ae = !m->is_fnn? (float*)malloc(sae_buf_size(sae_n_in(m), sae_n_hidden(m)) * sizeof(float)) : 0;
 	while (mn < n) {
 		mb.n = tc->mini_batch < n - mn? tc->mini_batch : n - mn;
 		mb.x = &sx[mn];
@@ -205,7 +205,7 @@ float sann_train_epoch(sann_t *m, const sann_tconf_t *tc, const float *h, int n,
 		mn += mb.n;
 	}
 	if (mb.buf_ae) free(mb.buf_ae);
-	if (mb.buf_mln) smln_buf_destroy(mb.buf_mln);
+	if (mb.buf_fnn) sfnn_buf_destroy(mb.buf_fnn);
 
 	if (_buf == 0) free(buf);
 	free(sx); free(sy);
@@ -222,7 +222,7 @@ float sann_evaluate(const sann_t *m, int n, float *const* x, float *const* y0)
 		double cost = 0.;
 		sann_apply(m, x[i], y, 0);
 		for (j = 0; j < sann_n_out(m); ++j)
-			cost += sann_sigm_cost(m->is_mln? y0[i][j] : x[i][j], y[j]);
+			cost += sann_sigm_cost(m->is_fnn? y0[i][j] : x[i][j], y[j]);
 		sum += cost;
 	}
 	free(y);
