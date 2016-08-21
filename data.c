@@ -1,22 +1,33 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include <zlib.h>
 #include "sann.h"
 #include "kseq.h"
+#ifdef HAVE_ZLIB
+#include <zlib.h>
 KSTREAM_INIT(gzFile, gzread, 16384)
+#else
+#include <unistd.h>
+#include <fcntl.h>
+KSTREAM_INIT(int, read, 16384)
+#endif
 
 #define SANN_MAGIC "SAN\1"
 
 float **sann_data_read(const char *fn, int *n_, int *n_col_, char ***row_names, char ***col_names)
 {
-	gzFile fp;
 	kstream_t *ks;
 	float **x = 0;
 	int n = 0, m = 0, dret, n_col = 0;
 	kstring_t str = {0,0,0};
 
+#ifdef HAVE_ZLIB
+	gzFile fp;
 	fp = fn && strcmp(fn, "-")? gzopen(fn, "r") : gzdopen(fileno(stdin), "r");
+#else
+	int fp;
+	fp = fn && strcmp(fn, "-")? open(fn, O_RDONLY) : fileno(stdin);
+#endif
 	ks = ks_init(fp);
 	if (row_names) *row_names = 0;
 	if (col_names) *col_names = 0;
@@ -62,10 +73,14 @@ float **sann_data_read(const char *fn, int *n_, int *n_col_, char ***row_names, 
 	}
 	free(str.s);
 	ks_destroy(ks);
-	gzclose(fp);
 	x = (float**)realloc(x, n * sizeof(float*));
 	if (row_names) *row_names = (char**)realloc(*row_names, n * sizeof(char*));
 	*n_ = n, *n_col_ = n_col;
+#ifdef HAVE_ZLIB
+	gzclose(fp);
+#else
+	close(fp);
+#endif
 	return x;
 }
 

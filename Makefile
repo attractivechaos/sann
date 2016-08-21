@@ -1,6 +1,6 @@
 CC=			gcc
 CFLAGS=		-g -Wall -Wc++-compat -Wno-unused-function -O2
-CPPFLAGS=	#-D_NO_SSE
+CPPFLAGS=	-DHAVE_ZLIB
 INCLUDES=	-I.
 OBJS=		math.o sae.o smln.o sann.o data.o io.o
 PROG=		sann
