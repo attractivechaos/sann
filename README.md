@@ -18,6 +18,20 @@ recent techniques to improve training, such as [RMSprop][rmsprop] and
 denoising AEs. On [MNIST][mnist], SANN achieves similar performance and
 accuracy to an FNN implemented with [Keras][keras].
 
+### Features
+
+* Efficient. Time-consuming inner loops are optimized to reduce cache misses
+  and are vectorized with SSE. Little room for further speedup with CPU only.
+
+* Portable. Written in C and compilable with C++ compilers. Use only standard
+  Linux libraries.
+
+### Limitations
+
+ * No [convolutional neural network][cnn] (CNN).
+
+ * No [Batch Normalization][bn].
+
 [fnn]: https://en.wikipedia.org/wiki/Feedforward_neural_network
 [cnn]: https://en.wikipedia.org/wiki/Convolutional_neural_network
 [ae]: https://en.wikipedia.org/wiki/Autoencoder
@@ -25,3 +39,4 @@ accuracy to an FNN implemented with [Keras][keras].
 [dropout]: https://www.cs.toronto.edu/~hinton/absps/JMLRdropout.pdf
 [mnist]: http://yann.lecun.com/exdb/mnist/
 [keras]: https://keras.io/
+[bn]: https://arxiv.org/abs/1502.03167
