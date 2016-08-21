@@ -3,7 +3,7 @@
 import sys, getopt, re, gzip
 import numpy as np
 from keras.models import Sequential
-from keras.layers import Dense, Activation
+from keras.layers import Dense, Activation, Dropout
 from keras.models import load_model
 from keras.optimizers import RMSprop
 
@@ -28,22 +28,25 @@ def sann_data_read(fn):
 	return np.array(x).astype('float32'), row_names, col_names
 
 def main_train(argv):
-	n_hidden, n_epochs, minibatch, lr, cost_func, heldout, seed, outfn = 50, 20, 64, .001, 'binary_crossentropy', .1, 11, None
+	n_hidden, n_epochs, minibatch, lr, heldout, seed, r_hidden, outfn = 50, 20, 64, .001, .1, 11, 0.0, None
 
 	def train_help():
 		print("Usage: sann-keras train [options] <input.snd> <output.snd>")
 		print("Options:")
-		print("  -h INT     number of hidden neurons [50]")
-		print("  -B INT     minibatch size [64]")
-		print("  -e FLOAT   learning rate [0.001]")
-		print("  -o FILE    save model to FILE []")
-		print("  -n INT     number of epochs [20]")
-		print("  -T FLOAT   fraction of held-out data [0.1]")
-		print("  -s INT     random seed [11]")
+		print("  Model construction:")
+		print("    -h INT     number of hidden neurons [50]")
+		print("    -s INT     random seed [11]")
+		print("    -o FILE    save model to FILE []")
+		print("  Model training:")
+		print("    -e FLOAT   learning rate [0.001]")
+		print("    -T FLOAT   fraction of held-out data [0.1]")
+		print("    -R FLOAT   dropout rate at the hidden layers [0.0]")
+		print("    -n INT     number of epochs [20]")
+		print("    -B INT     minibatch size [64]")
 		sys.exit(1)
 
 	try:
-		opts, args = getopt.getopt(argv, "h:n:B:o:e:cT:s:")
+		opts, args = getopt.getopt(argv, "h:n:B:o:e:T:s:R:")
 	except getopt.GetoptError:
 		train_help()
 	if len(args) < 2:
@@ -55,8 +58,8 @@ def main_train(argv):
 		elif opt == '-B': minibatch = int(arg)
 		elif opt == '-o': outfn = arg
 		elif opt == '-e': lr = float(arg)
-		elif opt == '-c': cost_func = 'categorical_crossentropy'
 		elif opt == '-T': heldout = float(arg)
+		elif opt == '-R': dropout = float(arg)
 		elif opt == '-s': seed = int(arg)
 
 	np.random.seed(seed)
@@ -64,8 +67,9 @@ def main_train(argv):
 	y, y_rnames, y_cnames = sann_data_read(args[1])
 	model = Sequential()
 	model.add(Dense(n_hidden, input_dim=len(x[0]), activation='relu'))
+	if r_hidden > 0.0 and r_hidden < 1.0: model.add(Dropout(r_hidden))
 	model.add(Dense(len(y[0]), activation='sigmoid'))
-	model.compile(loss=cost_func, optimizer=RMSprop(lr=lr), metrics=['accuracy'])
+	model.compile(loss='binary_crossentropy', optimizer=RMSprop(lr=lr), metrics=['accuracy'])
 	model.fit(x, y, nb_epoch=n_epochs, batch_size=minibatch, validation_split=heldout)
 	if outfn: model.save(outfn)
 
