@@ -79,6 +79,7 @@ typedef struct __kstring_t {
 	SCOPE int ks_getuntil(kstream_t *ks, int delimiter, kstring_t *str, int *dret)  \
 	{ \
 		if (dret) *dret = 0; \
+		str->l = 0; \
 		if (ks->begin >= ks->end && ks->is_eof) return -1; \
 		for (;;) { \
 			int i; \
