@@ -45,7 +45,7 @@ sann_activate_f sann_get_af(int type)
 {
 	if (type == SANN_AF_SIGM) return sann_sigm;
 	if (type == SANN_AF_TANH) return sann_tanh;
-	if (type == SANN_AF_RECLIN) return sann_reclin;
+	if (type == SANN_AF_ReLU) return sann_reclin;
 	return 0;
 }
 

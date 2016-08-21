@@ -59,7 +59,7 @@ void smln_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af
 {
 	int i, j, k;
 	float q[2] = { 1.0f / (1.0f - r_in), 1.0f / (1.0f - r_hidden) };
-	if (r_in > 0.) {
+	if (r_in > 0.0f && r_in < 1.0f) {
 		for (i = 0; i < n_neurons[0]; ++i)
 			b->out[0][i] = drand48() < r_in? 0.0f : x[i];
 	} else memcpy(b->out[0], x, n_neurons[0] * sizeof(float));

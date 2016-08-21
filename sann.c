@@ -37,7 +37,7 @@ sann_t *sann_init_mln(int n_layers, const int *n_neurons)
 	m->n_neurons = (int32_t*)calloc(n_layers, 4);
 	for (i = 0; i < n_layers; ++i) m->n_neurons[i] = n_neurons[i];
 	m->af = (int32_t*)calloc(n_layers - 1, 4);
-	for (i = 0; i < n_layers - 2; ++i) m->af[i] = SANN_AF_RECLIN;
+	for (i = 0; i < n_layers - 2; ++i) m->af[i] = SANN_AF_ReLU;
 	m->af[i] = SANN_AF_SIGM;
 	m->t = (float*)calloc(smln_n_par(m->n_layers, m->n_neurons), sizeof(float));
 	smln_core_randpar(m->n_layers, m->n_neurons, m->t);
@@ -239,6 +239,7 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int N, float *const* x, float
 	float *g_prev, *g_curr, *t_prev, *h = 0, cost_best = FLT_MAX;
 	sann_t *best;
 
+	assert(m->af[m->n_layers - 2] == SANN_AF_SIGM); // for now, the output activation function has to be sigmoid
 	n_test = (int)(N * tc0->vfrac);
 	n_train = N - n_test;
 

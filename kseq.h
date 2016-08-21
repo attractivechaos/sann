@@ -63,40 +63,6 @@
 		free(ks); \
 	}
 
-#define __KS_INLINED(__read) \
-	static inline int ks_getc(kstream_t *ks) \
-	{ \
-		if (ks->is_eof && ks->begin >= ks->end) return -1; \
-		if (ks->begin >= ks->end) { \
-			ks->begin = 0; \
-			ks->end = __read(ks->f, ks->buf, ks->bufsize); \
-			if (ks->end < ks->bufsize) ks->is_eof = 1; \
-			if (ks->end == 0) return -1; \
-		} \
-		return (int)ks->buf[ks->begin++]; \
-	} \
-	static inline int ks_getuntil(kstream_t *ks, int delimiter, kstring_t *str, int *dret) \
-	{ return ks_getuntil2(ks, delimiter, str, dret, 0); }
-
-#define __KS_READ(__read, __bufsize) \
-	static inline size_t ks_read(kstream_t *ks, uint8_t *buf, size_t len) \
-	{ \
-		size_t offset = 0; \
-		if (ks->is_eof && ks->begin >= ks->end) return -1; \
-		while (len > ks->end - ks->begin) { \
-			int l = ks->end - ks->begin; \
-			memcpy(buf + offset, ks->buf + ks->begin, l); \
-			len -= l; offset += l; \
-			ks->begin = 0; \
-			ks->end = __read(ks->f, ks->buf, __bufsize); \
-			if (ks->end < __bufsize) ks->is_eof = 1; \
-			if (ks->end == 0) return offset; \
-		} \
-		memcpy(buf + offset, ks->buf + ks->begin, len); \
-		ks->begin += len; \
-		return offset + len; \
-	}
-
 #ifndef KSTRING_T
 #define KSTRING_T kstring_t
 typedef struct __kstring_t {
@@ -110,10 +76,9 @@ typedef struct __kstring_t {
 #endif
 
 #define __KS_GETUNTIL(SCOPE, __read) \
-	SCOPE int ks_getuntil2(kstream_t *ks, int delimiter, kstring_t *str, int *dret, int append)  \
+	SCOPE int ks_getuntil(kstream_t *ks, int delimiter, kstring_t *str, int *dret)  \
 	{ \
 		if (dret) *dret = 0; \
-		str->l = append? str->l : 0; \
 		if (ks->begin >= ks->end && ks->is_eof) return -1; \
 		for (;;) { \
 			int i; \
@@ -162,17 +127,8 @@ typedef struct __kstring_t {
 #define KSTREAM_INIT2(SCOPE, type_t, __read, __bufsize) \
 	__KS_TYPE(type_t) \
 	__KS_BASIC(SCOPE, type_t, __bufsize) \
-	__KS_GETUNTIL(SCOPE, __read) \
-	__KS_READ(__read, __bufsize) \
-	__KS_INLINED(__read)
+	__KS_GETUNTIL(SCOPE, __read)
 
 #define KSTREAM_INIT(type_t, __read, __bufsize) KSTREAM_INIT2(static, type_t, __read, __bufsize)
-
-#define KSTREAM_DECLARE(type_t, __read) \
-	__KS_TYPE(type_t) \
-	extern int ks_getuntil2(kstream_t *ks, int delimiter, kstring_t *str, int *dret, int append); \
-	extern kstream_t *ks_init(type_t f); \
-	extern void ks_destroy(kstream_t *ks); \
-	__KS_INLINED(__read)
 
 #endif

@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r73"
+#define SANN_VERSION "r74"
 
 #include <stdint.h>
 
@@ -16,7 +16,7 @@
 //! activation functions
 #define SANN_AF_SIGM     1  //! sigmoid
 #define SANN_AF_TANH     2  //! tanh
-#define SANN_AF_RECLIN   3  //! rectified linear, aka. ReLU
+#define SANN_AF_ReLU     3  //! rectified linear, aka. ReLU
 
 //! autoencoder scaling
 #define SAE_SC_NONE     0   //! no scaling (standard autoencoder)
@@ -43,8 +43,8 @@ typedef struct {
 	int32_t is_mln;     //! whether the model is MLNN or AE 
 	int32_t scaled;     //! how to scale the weight; valid values defined by SAE_SC_* macros (AE only)
 	int32_t n_layers;   //! number of layers; always 3 for autoencoder
-	int32_t *n_neurons; //! number of neurons in each layer; of size $n_layers
-	int32_t *af;        //! activation function; values defined by SANN_AF_*; of size $n_layers-1; output MUST BE sigmoid
+	int32_t *n_neurons; //! n_neurons[k] is the number of neurons at layer k; of size $n_layers
+	int32_t *af;        //! af[k] is the activation function at layer k+1; values defined by SANN_AF_*; output MUST BE sigmoid
 	float *t;           //! array of all parameters; size computed by function sann_n_par()
 } sann_t;
 

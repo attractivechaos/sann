@@ -1,10 +1,11 @@
 CC=			gcc
-CFLAGS=		-g -Wall -Wc++-compat -Wno-unused-function -O2
-CPPFLAGS=	-DHAVE_ZLIB
+CFLAGS=		-g -Wall -Wc++-compat -O2
+CPPFLAGS=
+ZLIB_FLAGS=	-DHAVE_ZLIB   # comment out this line to drop the zlib dependency
 INCLUDES=	-I.
 OBJS=		math.o sae.o smln.o sann.o data.o io.o
 PROG=		sann
-LIBS=		-lm -lz -lpthread
+LIBS=		-lm -lz
 
 .SUFFIXES:.c .o
 
@@ -18,6 +19,9 @@ sann:cli.o cli_priv.o libsann.a
 
 libsann.a:$(OBJS)
 		$(AR) -csru $@ $(OBJS)
+
+data.o:data.c
+		$(CC) -c $(CFLAGS) $(ZLIB_FLAGS) $(INCLUDES) $< -o $@
 
 clean:
 		rm -fr gmon.out *.o a.out $(PROG) $(PROG_EXTRA) *~ *.a *.dSYM session*
