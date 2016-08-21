@@ -59,7 +59,7 @@ def main_train(argv):
 		elif opt == '-o': outfn = arg
 		elif opt == '-e': lr = float(arg)
 		elif opt == '-T': heldout = float(arg)
-		elif opt == '-R': dropout = float(arg)
+		elif opt == '-R': r_hidden = float(arg)
 		elif opt == '-s': seed = int(arg)
 
 	np.random.seed(seed)
