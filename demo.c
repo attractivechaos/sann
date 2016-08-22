@@ -1,4 +1,4 @@
-// to compile: gcc -g -O2 -Wall example.c -L. -lsann -lz
+// to compile: gcc -g -O2 -Wall example.c -I. -L. -lsann -lz
 
 #include <assert.h>
 #include <stdlib.h>

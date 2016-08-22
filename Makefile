@@ -8,11 +8,14 @@ PROG=		sann
 LIBS=		-lm -lz
 
 .SUFFIXES:.c .o
+.PHONY:all demo clean depend
 
 .c.o:
 		$(CC) -c $(CFLAGS) $(CPPFLAGS) $(INCLUDES) $< -o $@
 
 all:libsann.a $(PROG)
+
+demo:xor-demo sann-demo
 
 sann:cli.o cli_priv.o libsann.a
 		$(CC) $(CFLAGS) cli.o cli_priv.o -o $@ -L. -lsann $(LIBS)
@@ -23,8 +26,14 @@ libsann.a:$(OBJS)
 data.o:data.c
 		$(CC) -c $(CFLAGS) $(ZLIB_FLAGS) $(INCLUDES) $< -o $@
 
+sann-demo:demo.c libsann.a
+		$(CC) $(CFLAGS) $< -o $@ -L. -lsann $(LIBS)
+
+xor-demo:xor-demo.c libsann.a
+		$(CC) $(CFLAGS) $< -o $@ -L. -lsann $(LIBS)
+
 clean:
-		rm -fr gmon.out *.o a.out $(PROG) $(PROG_EXTRA) *~ *.a *.dSYM session*
+		rm -fr gmon.out *.o a.out $(PROG) $(PROG_EXTRA) *~ *.a *.dSYM session* xor-demo sann-demo
 
 depend:
 		(LC_ALL=C; export LC_ALL; makedepend -Y -- $(CFLAGS) $(DFLAGS) -- *.c)
