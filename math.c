@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 #include <float.h>
 #include <math.h>
 #include "sann.h"
@@ -49,17 +50,45 @@ sann_activate_f sann_get_af(int type)
 	return 0;
 }
 
-/****************
- * Gaussian RNG *
- ****************/
+/*********************************
+ * Pseudorandom Number Generator *
+ *********************************/
+
+#define SANN_RNG_INIT 1181783497276652981ULL
+
+static uint64_t sann_rng[2] = { 11ULL, SANN_RNG_INIT };
+//static volatile int sann_rng_lock = 0;
+
+static inline uint64_t xorshift128plus(uint64_t s[2])
+{
+	uint64_t x, y;
+//	while (__sync_lock_test_and_set(&sann_rng_lock, 1)) while (sann_rng_lock); // a spin lock
+	x = s[0], y = s[1];
+	s[0] = y;
+	x ^= x << 23;
+	s[1] = x ^ y ^ (x >> 17) ^ (y >> 26);
+	y += s[1];
+//	__sync_lock_release(&sann_rng_lock);
+	return y;
+}
+
+void sann_srand(uint64_t seed)
+{
+	sann_rng[0] = seed, sann_rng[1] = SANN_RNG_INIT;
+}
+
+double sann_drand(void)
+{
+	return (xorshift128plus(sann_rng)>>11) * (1.0/9007199254740992.0);
+}
 
 double sann_normal(int *iset, double *gset)
 { 
 	if (*iset == 0) {
 		double fac, rsq, v1, v2; 
 		do { 
-			v1 = 2.0 * drand48() - 1.0;
-			v2 = 2.0 * drand48() - 1.0; 
+			v1 = 2.0 * sann_drand() - 1.0;
+			v2 = 2.0 * sann_drand() - 1.0; 
 			rsq = v1 * v1 + v2 * v2;
 		} while (rsq >= 1.0 || rsq == 0.0);
 		fac = sqrt(-2.0 * log(rsq) / rsq); 

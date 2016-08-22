@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r81"
+#define SANN_VERSION "r82"
 
 #include <stdint.h>
 
@@ -234,6 +234,9 @@ void sann_free_names(int n, char **s);
  * @param s          pointer to vectors
  */
 void sann_free_vectors(int n, float **x);
+
+double sann_drand(void);
+void sann_srand(uint64_t seed);
 
 #ifdef __cplusplus
 }

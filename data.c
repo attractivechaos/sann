@@ -89,7 +89,7 @@ void sann_data_shuffle(int n, float **x, float **y, char **names)
 	int i, *s;
 	s = (int*)malloc(n * sizeof(int));
 	for (i = n - 1; i >= 0; --i)
-		s[i] = (int)(drand48() * (i+1));
+		s[i] = (int)(sann_drand() * (i+1));
 	for (i = n - 1; i >= 0; --i) {
 		float *tf;
 		char *ts;

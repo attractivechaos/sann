@@ -19,7 +19,7 @@ int main_train(int argc, char *argv[])
 	sann_tconf_t tc, tc1;
 	char **row_names, **col_names_in = 0, **col_names_out = 0, *fnout = 0;
 
-	srand48(11);
+	sann_srand(11);
 	memset(&tc1, 0, sizeof(sann_tconf_t));
 	tc1.r_in = tc1.r_hidden = tc1.vfrac = -1.0f;
 	while ((c = getopt(argc, argv, "l:h:n:r:R:e:i:s:f:S:T:m:b:B:o:")) >= 0) {
@@ -32,7 +32,7 @@ int main_train(int argc, char *argv[])
 		else if (c == 'B') tc1.mini_batch = atoi(optarg);
 		else if (c == 'o') fnout = optarg;
 		else if (c == 'i') m = sann_restore(optarg, &col_names_in, &col_names_out);
-		else if (c == 's') srand48(atol(optarg));
+		else if (c == 's') sann_srand(atol(optarg));
 		else if (c == 'f') af = atoi(optarg);
 		else if (c == 'S') scaled = atoi(optarg);
 		else if (c == 'm') malgo = atoi(optarg);

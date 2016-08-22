@@ -61,12 +61,12 @@ void sfnn_core_forward(int n_layers, const int32_t *n_neurons, const int32_t *af
 	float q[2] = { 1.0f / (1.0f - r_in), 1.0f / (1.0f - r_hidden) };
 	if (r_in > 0.0f && r_in < 1.0f) {
 		for (i = 0; i < n_neurons[0]; ++i)
-			b->out[0][i] = drand48() < r_in? 0.0f : x[i];
+			b->out[0][i] = sann_drand() < r_in? 0.0f : x[i];
 	} else memcpy(b->out[0], x, n_neurons[0] * sizeof(float));
 	for (k = 1; k < n_layers; ++k) {
 		sann_activate_f func = sann_get_af(af[k-1]);
 		for (j = 0; j < n_neurons[k]; ++j)
-			if (k < n_layers - 1 && r_hidden > 0.0f && drand48() < r_hidden)
+			if (k < n_layers - 1 && r_hidden > 0.0f && sann_drand() < r_hidden)
 				b->out[k][j] = b->deriv[k][j] = 0.0f;
 			else b->out[k][j] = func(q[k>1] * sann_sdot(n_neurons[k-1], b->w[k] + j * n_neurons[k-1], b->out[k-1]) + b->b[k][j], &b->deriv[k][j]);
 	}

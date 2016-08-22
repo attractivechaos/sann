@@ -45,7 +45,7 @@ void sae_core_backprop(int n_in, int n_hidden, const float *t, sann_activate_f f
 	// add noises to the input
 	if (r > 0. && r < 1.) {
 		for (i = 0; i < n_in; ++i)
-			out0[i] = drand48() < r? 0. : x[i];
+			out0[i] = sann_drand() < r? 0. : x[i];
 	} else memcpy(out0, x, n_in * sizeof(float));
 	// forward calculation
 	sae_core_forward(n_in, n_hidden, t, f1, f2, r, out0, out1, out2, delta1, scaled);
