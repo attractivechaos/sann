@@ -258,10 +258,12 @@ int sann_train(sann_t *m, const sann_tconf_t *tc0, int N, float *const* x, float
 		if (h) memcpy(t_prev, m->t, n_par * sizeof(float));
 		rc = sann_train_epoch(m, tc0, h, n_train, x, y, 0);
 		cost = n_test? sann_evaluate(m, n_test, x + n_train, y? y + n_train : 0) : 0.;
-		if (sann_verbose >= 3)
-			fprintf(stderr, "[M::%s] epoch:%d running_cost:%g validation_cost:%g\n", __func__, k+1, rc, cost);
+		if (sann_verbose >= 3) {
+			if (n_test) fprintf(stderr, "[M::%s] epoch:%d running_cost:%g validation_cost:%g\n", __func__, k+1, rc, cost);
+			else fprintf(stderr, "[M::%s] epoch:%d running_cost:%g\n", __func__, k+1, rc);
+		}
 
-		if (k >= tc0->max_inc && cost < cost_best) {
+		if (k < tc0->max_inc || (k >= tc0->max_inc && cost < cost_best)) {
 			cost_best = cost;
 			sann_cpy(best, m);
 			n_cost_inc = 0, best_epoch = k;
