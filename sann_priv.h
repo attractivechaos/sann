@@ -23,6 +23,8 @@ typedef struct sfnn_buf_t {
 } sfnn_buf_t;
 
 #define sae_n_par(n_in, n_hidden) ((n_in) * (n_hidden) + (n_in) + (n_hidden))
+#define sae_par2ptr(n_in, n_hidden, p, b1, b2, w) (*(b1) = (p), *(b2) = (p) + (n_hidden), *(w) = (p) + (n_hidden) + (n_in))
+#define sae_buf_size(n_in, n_hidden) (3 * (n_in) + 2 * (n_hidden))
 
 #ifdef __cplusplus
 extern "C" {

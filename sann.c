@@ -8,8 +8,6 @@
 
 int sann_verbose = 3;
 
-#define sae_buf_size(n_in, n_hidden) (3 * (n_in) + 2 * (n_hidden))
-
 sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
 {
 	sann_t *m;

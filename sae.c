@@ -6,8 +6,6 @@
 #include <math.h>
 #include "sann_priv.h"
 
-#define sae_par2ptr(n_in, n_hidden, p, b1, b2, w) (*(b1) = (p), *(b2) = (p) + (n_hidden), *(w) = (p) + (n_hidden) + (n_in))
-
 void sae_core_forward(int n_in, int n_hidden, const float *t, sann_activate_f f1, sann_activate_f f2, float r, const float *x, float *z, float *y, float *deriv1, int scaled)
 {
 	int j, k;
