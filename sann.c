@@ -111,7 +111,7 @@ void sann_tconf_init(sann_tconf_t *tc, int malgo, int balgo)
 	tc->vfrac = .1f;
 	tc->malgo = malgo > 0? malgo : SANN_MIN_MINI_RMSPROP;
 	tc->balgo = balgo > 0? balgo : SANN_MIN_BATCH_RPROP;
-	tc->r_in = .3f;
+	tc->r_in = 0.0f;
 	tc->r_hidden = 0.0f;
 	tc->L2_par = .001f;
 	tc->h = .01f;

@@ -62,7 +62,7 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "  Model construction:\n");
 		fprintf(stderr, "    -i FILE       read model from FILE []\n");
 		fprintf(stderr, "    -h INT[,INT]  number of hidden neurons (use ',' to add a hidden layer) [%d]\n", def_n_hidden);
-		fprintf(stderr, "    -f INT        hidden activation (1:sigm; 2:tanh; 3:ReLU) [1 for AE; 3 for MLN]\n");
+		fprintf(stderr, "    -f INT        hidden activation (1:sigm; 2:tanh; 3:ReLU) [1 for AE; 3 for FNN]\n");
 		fprintf(stderr, "    -s INT        random seed [11]\n");
 		fprintf(stderr, "    -o FILE       save trained model to FILE [stdout]\n");
 		fprintf(stderr, "    -S INT        weight scaling for autoencoders (0:none; 1:sqrt; 2:full) [%d]\n", scaled);
@@ -71,11 +71,13 @@ int main_train(int argc, char *argv[])
 		fprintf(stderr, "    -b INT        batch optimization algorithm (1:fixed rate; 2:iRprop- adaptive) [%d]\n", SANN_MIN_BATCH_RPROP);
 		fprintf(stderr, "    -e FLOAT      learning rate [.01 for SGD; .001 for RMSprop]\n");
 		fprintf(stderr, "    -r FLOAT      dropout rate at the input layer [%g]\n", tc.r_in);
-		fprintf(stderr, "    -R FLOAT      dropout rate at the hidden layers [%g]\n", tc.r_hidden);
+		fprintf(stderr, "    -R FLOAT      dropout rate at the hidden layer(s) (FNN only) [%g]\n", tc.r_hidden);
 		fprintf(stderr, "    -T FLOAT      fraction of data used for testing [%g]\n", tc.vfrac);
 		fprintf(stderr, "    -n INT        max number of epochs [%d]\n", tc.n_epochs);
 		fprintf(stderr, "    -l INT        stop if validation cost not reduced after INT epochs [%d]\n", tc.max_inc);
 		fprintf(stderr, "    -B INT        size of a minibatch [%d]\n", tc.mini_batch);
+		fprintf(stderr, "\n");
+		fprintf(stderr, "Notes: the most important parameters are -e and -h.\n");
 		return 1;
 	}
 
