@@ -1,7 +1,7 @@
 ## <a name="started"></a>Getting Started
 ```sh
 git clone http://github.com/attractivechaos/sann
-cd sann && make
+cd sann && make all demo
 wget -O- URL-to-mnist-data | tar xf -
 ./sann train -o mnist-mln.snm train-x.snd.gz train-y.snd.gz
 ./sann test mnist-mln.snm test-x.snd.gz > test-out.snd
@@ -143,7 +143,7 @@ where the last two parameters of `sann_tconf_init` specifiy the training
 algorithms for each minibatch ([RMSprop][rmsprop] by default) and for each
 complete batch ([iRprop-][rprop] by default). If you don't have training data
 in two-dimension arrays, you may load the data from SND files:
-```sh
+```c
 float **input, **output;
 int N, n_in, N_out;
 input = sann_data_read("input.snd", &N, &n_in, 0, 0);
@@ -151,17 +151,17 @@ output = sann_data_read("output.snd", &N_out, &n_out, 0, 0);
 assert(N == N_out); // check if network input matches output
 ```
 and train the model:
-```sh
+```c
 sann_train(fnn, &conf, N, input, output);
 ```
 where `N` is the number of training samples, `input[i]` is the input vector of
 the *i*-th sample and `output[i]` the output vector of the *i*-th sample.
 After training, you may save the model to a file:
-```sh
+```c
 sann_dump("myfnn.snm", fnn, 0, 0);
 ```
 or apply it to a test sample:
-```sh
+```c
 float *in1, *out1, *hidden1;
 out1 = (float*)malloc(sann_n_out(fnn) * sizeof(float));
 sann_apply(fnn, in1, out1, 0);
@@ -174,7 +174,7 @@ with `sann_free_vectors`.
 
 ## <a name="hacker"></a>Hackers' Guide
 
-SANN consists of the following header or C source code files:
+SANN consists of the following header and C source code files:
 
 * `sann.h`: all developer-oriented functions and structs.
 
@@ -195,6 +195,9 @@ SANN consists of the following header or C source code files:
 * `data.c`: SND format parser
 
 * `cli.c` and `cli_priv.c`: command line interface
+
+* `keras/sann-keras.py`: similar SANN functionalities implemented on top of
+  [Keras][keras], used for comparison purposes.
 
 
 [fnn]: https://en.wikipedia.org/wiki/Feedforward_neural_network
