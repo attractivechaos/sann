@@ -46,7 +46,7 @@ including [FANN][fann] and [genann][genann].
 
  * No [convolutional neural network][cnn] (CNN) or [recurrent neural
    network][rnn] (RNN). No [Batch Normalization][bn] (a recent technique to
-   improve training).
+   improve training). Not supporting CUDA.
 
  * Not foolproof. Users need to manually tune hyper-parameters, in particular
    the learning rate.
