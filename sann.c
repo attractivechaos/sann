@@ -12,6 +12,7 @@ sann_t *sann_init_ae(int n_in, int n_hidden, int scaled)
 {
 	sann_t *m;
 	m = (sann_t*)calloc(1, sizeof(sann_t));
+	if (scaled < 0) scaled = SAE_SC_SQRT;
 	m->is_fnn = 0;
 	m->scaled = scaled; // AE-specific parameters
 	m->n_layers = 3;

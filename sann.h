@@ -1,7 +1,7 @@
 #ifndef SANN_H
 #define SANN_H
 
-#define SANN_VERSION "r88"
+#define SANN_VERSION "r90"
 
 #include <stdint.h>
 
