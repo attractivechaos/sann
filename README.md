@@ -1,4 +1,4 @@
-## Getting Started
+## <a name="started"></a>Getting Started
 ```sh
 git clone http://github.com/attractivechaos/sann
 cd sann && make
@@ -8,7 +8,20 @@ wget -O- URL-to-mnist-data | tar xf -
 mnist/eval.pl test-y.snd.gz test-out.snd
 ```
 
-## Introduction
+## Table of Contents
+
+- [Getting Started](#started)
+- [Introduction](#intro)
+  - [Features](#feat)
+  - [Limitations](#limit)
+- [Guide to the Command-Line Tool](#cli)
+  - [The SANN Data Format (SND)](#snd)
+  - [Model training](#cli-train)
+  - [Applying a trained model](#cli-apply)
+- [Guide to the SANN Library](#api-guide)
+
+
+## <a name="intro"></a>Introduction
 
 SANN is a lightweight, standalone and efficient C library as well as a
 command-line tool that implements multi-layer [feedforward neural
@@ -20,7 +33,7 @@ accuracy. On [MNIST][mnist], SANN achieves similar performance and accuracy to
 an FNN implemented with [Keras][keras], better than other lightweight libraries
 including [FANN][fann] and [genann][genann].
 
-### Features
+### <a name="feat"></a>Features
 
  * Efficient. Time-consuming inner loops are optimized to reduce cache misses
    and are vectorized with SSE. Little room for further speedup with CPU only.
@@ -28,7 +41,7 @@ including [FANN][fann] and [genann][genann].
  * Portable. Written in C and compatible with C++ compilers. Use only standard
    Linux libraries.
 
-### Limitations
+### <a name="limit"></a>Limitations
 
  * No [convolutional neural network][cnn] (CNN) or [recurrent neural
    network][rnn] (RNN). No [Batch Normalization][bn] (a recent technique to
@@ -37,9 +50,10 @@ including [FANN][fann] and [genann][genann].
  * Not foolproof. Users need to manually tune hyper-parameters, in particular
    the learning rate.
 
-## Guide to the Command-Line Tool
 
-### The SANN Data Format (SND)
+## <a name="cli"></a>Guide to the Command-Line Tool
+
+### <a name="snd"></a>The SANN Data Format (SND)
 
 The SANN data format (SND) is a TAB-delimited text format with each row
 representing a sample vector. The file may optionally have a header line
@@ -64,7 +78,7 @@ For training, the network output is in the same format. For MNIST:
 5:9     0   0   0   0   0   0   0   0   0   1
 ```
 
-### Model training
+### <a name="cli-train"></a>Model training
 
 To train an FNN, you need to provide network input and output, both in the
 SND format:
@@ -91,7 +105,7 @@ cost function ([cross-entropy][ce-cost]). As a result, the output of FNN and
 the input of AE must range from 0 to 1. We may lift these constrains in future
 releases.
 
-### Applying a trained model
+### <a name="cli-apply"></a>Applying a trained model
 
 To apply a trained model:
 ```sh
@@ -99,7 +113,8 @@ sann apply model.snm model-input.snd.gz > output.snd
 ```
 The output is also in the SND format.
 
-## Guide to the SANN Library
+
+## <a name="api-guide"></a>Guide to the SANN Library
 
 The SANN library only includes two structs. `sann_t` is the minimal
 representation of an FNN model. It describes the topology (number of layers,
