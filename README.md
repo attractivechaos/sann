@@ -113,13 +113,10 @@ To train a model by calling the C APIs, you should first initialize a model
 with either `sann_init_fnn` or `sann_init_ae`:
 ```c
 int n_neurons[3] = { 784, 50, 10 };
-sann_t *fnn, *ae;
+sann_t *fnn;
 fnn = sann_init_fnn(3, n_neurons);
-ae = sann_init_ae(784, 50, -1);
 ```
-The last parameter of `sann_init_ae` specifies how to scale weights. Without
-further explanation, we recommend a negative number to enable the default
-behavior. After creating the model, you need to set the training parameters
+After creating the model, you need to set the training parameters
 ```c
 sann_tconf_t conf;
 sann_tconf_init(&conf, 0, 0);
@@ -127,16 +124,8 @@ conf.h = 0.01; // change the default learning rate
 ```
 where the last two parameters of `sann_tconf_init` specifiy the training
 algorithms for each minibatch ([RMSprop][rmsprop] by default) and for each
-complete batch ([iRprop-][rprop] by default). If you already have training data
-in two-dimension arrays, you can invoke training with:
-```sh
-float **input, **output;
-sann_train(fnn, &conf, N, input, output);
-sann_train(ae, &conf, N, input, 0);
-```
-where `N` is the number of training samples, `input[i]` is the input vector
-of the *i*-th sample and `output[i]` the output vector of the *i*-th sample. If
-you have data in an SND file, you can load the data with:
+complete batch ([iRprop-][rprop] by default). If you don't have training data
+in two-dimension arrays, you may load the data from SND files:
 ```sh
 float **input, **output;
 int N, n_in, N_out;
@@ -144,23 +133,26 @@ input = sann_data_read("input.snd", &N, &n_in, 0, 0);
 output = sann_data_read("output.snd", &N_out, &n_out, 0, 0);
 assert(N == N_out); // check if network input matches output
 ```
+and train the model:
+```sh
+sann_train(fnn, &conf, N, input, output);
+```
+where `N` is the number of training samples, `input[i]` is the input vector of
+the *i*-th sample and `output[i]` the output vector of the *i*-th sample.
 After training, you may save the model to a file:
 ```sh
 sann_dump("myfnn.snm", fnn, 0, 0);
-sann_dump("myae.snm", ae, 0, 0);
 ```
 or apply it to a test sample:
 ```sh
 float *in1, *out1, *hidden1;
 out1 = (float*)malloc(sann_n_out(fnn) * sizeof(float));
 sann_apply(fnn, in1, out1, 0);
-free(out1);
-out1 = (float*)malloc(sae_n_in(ae) * sizeof(float));
-hidden1 = (float*)malloc(sae_n_hidden(ae) * sizeof(float));
-sann_apply(fnn, in1, out1, hidden1);
 ```
 Remeber deallocate the model with `sann_destroy` and free two-dimension arrays
 with `sann_free_vectors`.
+
+`demo.c` gives a complete example about how to use the library.
 
 [fnn]: https://en.wikipedia.org/wiki/Feedforward_neural_network
 [cnn]: https://en.wikipedia.org/wiki/Convolutional_neural_network
