@@ -196,8 +196,12 @@ SANN consists of the following header and C source code files:
 
 * `cli.c` and `cli_priv.c`: command line interface
 
+SANN also comes with the following side recipes:
+
 * `keras/sann-keras.py`: similar SANN functionalities implemented on top of
   [Keras][keras], used for comparison purposes.
+
+* `mnist/`: routines to convert MNIST data to SND.
 
 
 [fnn]: https://en.wikipedia.org/wiki/Feedforward_neural_network
