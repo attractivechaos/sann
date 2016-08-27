@@ -19,6 +19,7 @@ mnist/eval.pl test-y.snd.gz test-out.snd
   - [Model training](#cli-train)
   - [Applying a trained model](#cli-apply)
 - [Guide to the SANN Library](#api-guide)
+- [Hackers' Guide](#hacker)
 
 
 ## <a name="intro"></a>Introduction
@@ -122,7 +123,8 @@ number of neurons in each layer and activation functions) and all the model
 parameters (weights and biases). `sann_tconf_t` specifies hyperparameters
 needed for training, such as learning rate, dropout rates, minibatch size, etc.
 Training takes a predefined model and training parameters; prediction uses the
-model only.
+model only. All developer-oriented structs are defined or declared in `sann.h`.
+No other header files are needed for the primary functionality.
 
 To train a model by calling the C APIs, you should first initialize a model
 with either `sann_init_fnn` or `sann_init_ae`:
@@ -168,6 +170,32 @@ Remeber deallocate the model with `sann_destroy` and free two-dimension arrays
 with `sann_free_vectors`.
 
 `demo.c` gives a complete example about how to use the library.
+
+
+## <a name="hacker"></a>Hackers' Guide
+
+SANN consists of the following header or C source code files:
+
+* `sann.h`: all developer-oriented functions and structs.
+
+* `sann_priv.h`: low-level functions not intended to be exposed.
+
+* `math.c`: activation functions, two vectorized [BLAS][blas] routines (sdot
+  and saxpy), pseudo-random number generator and RMSprop. The majority of
+  computing time is spent on functions in this file.
+
+* `sfnn.c` and `sae.c`: barebone backprop and parameter initialization routines
+  for feedforward neuron networks and autoencoders, respectively. The core of
+  backprop, with optional dropout, is implemented here.
+
+* `sann.c`: unified wrapper for FNN and AE; batch training routines.
+
+* `io.c`: SANN model I/O.
+
+* `data.c`: SND format parser
+
+* `cli.c` and `cli_priv.c`: command line interface
+
 
 [fnn]: https://en.wikipedia.org/wiki/Feedforward_neural_network
 [cnn]: https://en.wikipedia.org/wiki/Convolutional_neural_network
