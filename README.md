@@ -34,6 +34,8 @@ accuracy. On [MNIST][mnist], SANN achieves similar performance and accuracy to
 an FNN implemented with [Keras][keras], better than other lightweight libraries
 including [FANN][fann] and [genann][genann].
 
+### <a name="motiv"></a>Motivations
+
 ### <a name="feat"></a>Features
 
  * Efficient. Time-consuming inner loops are optimized to reduce cache misses
@@ -46,7 +48,8 @@ including [FANN][fann] and [genann][genann].
 
  * No [convolutional neural network][cnn] (CNN) or [recurrent neural
    network][rnn] (RNN). No [Batch Normalization][bn] (a recent technique to
-   improve training). Not supporting CUDA.
+   improve training). Not supporting CUDA. As such, SANN is *NOT* a [deep
+   learning][dp] library.
 
  * Not foolproof. Users need to manually tune hyper-parameters, in particular
    the learning rate.
@@ -221,3 +224,4 @@ SANN also comes with the following side recipes:
 [dA]: https://en.wikipedia.org/wiki/Autoencoder#Denoising_autoencoder
 [sigm]: https://en.wikipedia.org/wiki/Sigmoid_function
 [ce-cost]: https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression
+[dp]: https://en.wikipedia.org/wiki/Deep_learning
