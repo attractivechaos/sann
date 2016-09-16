@@ -128,13 +128,72 @@ function snd_selcol(args)
 	buf.destroy();
 }
 
+function snd_noise(args)
+{
+	var c, r = 0.3;
+	while ((c = getopt(args, "r:")) != null)
+		if (c == 'r') r = parseFloat(getopt.arg);
+	if (getopt.ind == args.length) {
+		print("Usage: k8 sndutils.js noise [-r 0.3] <in.snd>");
+		exit(1);
+	}
+
+	var buf= new Bytes();
+	var file = new File(args[getopt.ind]);
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) != '#') {
+			for (var i = 1; i < t.length; ++i)
+				if (Math.random() < r) t[i] = 0.0;
+		}
+		print(t.join("\t"));
+	}
+	file.close();
+	buf.destroy();
+}
+
+function snd_top(args)
+{
+	var c;
+	while ((c = getopt(args, "")) != null);
+	if (getopt.ind == args.length) {
+		print("Usage: k8 sndutils.js top <in.snd>");
+		exit(1);
+	}
+
+	var buf= new Bytes();
+	var file = new File(args[getopt.ind]);
+	var h;
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) == '#') {
+			h = t.slice(0);
+		} else {
+			var max = -1, max2 = -1, i1 = -1, i2 = -1;
+			for (var i = 1; i < t.length; ++i) {
+				var x = parseFloat(t[i]);
+				if (x > max) max2 = max, i2 = i1, max = x, i1 = i;
+				else if (x > max2) max2 = x, i2 = i;
+			}
+			print(t[0], max.toFixed(6), max2.toFixed(6), h[i1], h[i2]);
+		}
+	}
+	file.close();
+	buf.destroy();
+}
+
 if (arguments.length == 0) {
 	print("Usage: k8 sndutils.js <command> <arguments>");
 	print("Commands:");
 	print("  rank      convert numbers to zero-truncated ranks");
 	print("  selcol    select columns based on their names");
+	print("  noise     randomly turn some values to zero");
+	print("  top       top 2 classes");
 }
 
 var cmd = arguments.shift();
 if (cmd == 'rank') snd_rank(arguments);
 else if (cmd == 'selcol') snd_selcol(arguments);
+else if (cmd == 'noise') snd_noise(arguments);
+else if (cmd == 'top') snd_top(arguments);
+else throw Error("ERROR: unknown command " + cmd);
