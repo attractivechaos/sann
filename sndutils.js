@@ -128,6 +128,47 @@ function snd_selcol(args)
 	buf.destroy();
 }
 
+function snd_reorder(args)
+{
+	if (args.length == 0) {
+		print("Usage: k8 sndutils.js reorder <col.list> [in.snd]");
+		exit(1);
+	}
+
+	var h = {}, icol = ['#'], file, buf = new Bytes();
+
+	file = new File(args[0]);
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		h[t[0]] = icol.length;
+		icol.push(t[0]);
+	}
+	file.close();
+
+	var g = [];
+
+	file = args.length > 1? new File(args[1]) : new File();
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) == '#') {
+			g[0] = 0;
+			for (var i = 1; i < icol.length; ++i)
+				g[i] = -1;
+			for (var i = 1; i < t.length; ++i)
+				if (h[t[i]] != null) g[h[t[i]]] = i;
+			print(icol.join("\t"));
+		} else {
+			var s = [];
+			for (var i = 0; i < g.length; ++i)
+				s[i] = g[i] >= 0? t[g[i]] : 0;
+			print(s.join("\t"));
+		}
+	}
+	file.close();
+
+	buf.destroy();
+}
+
 function snd_noise(args)
 {
 	var c, r = 0.3;
@@ -147,6 +188,26 @@ function snd_noise(args)
 				if (Math.random() < r) t[i] = 0.0;
 		}
 		print(t.join("\t"));
+	}
+	file.close();
+	buf.destroy();
+}
+
+function snd_cname(args)
+{
+	if (args.length == 0) {
+		print("Usage: k8 sndutils.js cname <in.snd>");
+		exit(1);
+	}
+	var buf= new Bytes();
+	var file = new File(args[0]);
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) == '#') {
+			for (var i = 1; i < t.length; ++i)
+				print(t[i]);
+			break;
+		}
 	}
 	file.close();
 	buf.destroy();
@@ -189,6 +250,9 @@ if (arguments.length == 0) {
 	print("  selcol    select columns based on their names");
 	print("  noise     randomly turn some values to zero");
 	print("  top       top 2 classes");
+	print("  cname     print column names");
+	print("  reoder    reorder and fill missing columns");
+	exit(1);
 }
 
 var cmd = arguments.shift();
@@ -196,4 +260,6 @@ if (cmd == 'rank') snd_rank(arguments);
 else if (cmd == 'selcol') snd_selcol(arguments);
 else if (cmd == 'noise') snd_noise(arguments);
 else if (cmd == 'top') snd_top(arguments);
+else if (cmd == 'cname') snd_cname(arguments);
+else if (cmd == 'reorder') snd_reorder(arguments);
 else throw Error("ERROR: unknown command " + cmd);
