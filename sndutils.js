@@ -243,6 +243,58 @@ function snd_top(args)
 	buf.destroy();
 }
 
+function snd_eval1c(args)
+{
+	var c;
+	while ((c = getopt(args, "")) != null);
+	if (getopt.ind == args.length) {
+		print("Usage: k8 sndutils.js eval1c <truth.snd> <predict.snd>");
+		exit(1);
+	}
+
+	var buf = new Bytes();
+	var file = new File(args[getopt.ind]);
+	var h = {}, label;
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) == '#') {
+			label = t.slice(0);
+			continue;
+		}
+		for (var i = 1; i < t.length; ++i) t[i] = parseFloat(t[i]);
+		var max = -1, max_i = -1;
+		for (var i = 1; i < t.length; ++i)
+			if (max < t[i]) max = t[i], max_i = i;
+		h[t[0]] = max_i;
+	}
+	file.close();
+
+	file = args.length == getopt.ind + 1? new File() : new File(args[getopt.ind+1]);
+	var n_tot = 0, n_err = 0;
+	while (file.readline(buf) >= 0) {
+		var t = buf.toString().split("\t");
+		if (t[0].charAt(0) == '#') continue;
+		for (var i = 1; i < t.length; ++i) t[i] = parseFloat(t[i]);
+		var max = -1, max_i = -1;
+		for (var i = 1; i < t.length; ++i)
+			if (max < t[i]) max = t[i], max_i = i;
+		if (h[t[0]] == null) {
+			warn("WARNING: missing sample '"+t[0]+"' in the truth");
+		} else {
+			var truth = h[t[0]];
+			++n_tot;
+			print("T", t[0], t[truth], label[truth]);
+			if (h[t[0]] != max_i) {
+				print("E", t[0], t[truth], t[max_i], label[truth], label[max_i]);
+				++n_err;
+			}
+		}
+	}
+	print("S", n_tot, n_err, (n_err/n_tot*100).toFixed(2) + '%');
+	file.close();
+	buf.destroy();
+}
+
 if (arguments.length == 0) {
 	print("Usage: k8 sndutils.js <command> <arguments>");
 	print("Commands:");
@@ -252,6 +304,7 @@ if (arguments.length == 0) {
 	print("  top       top 2 classes");
 	print("  cname     print column names");
 	print("  reoder    reorder and fill missing columns");
+	print("  eval1c    evaluate classification (1 class only)");
 	exit(1);
 }
 
@@ -262,4 +315,5 @@ else if (cmd == 'noise') snd_noise(arguments);
 else if (cmd == 'top') snd_top(arguments);
 else if (cmd == 'cname') snd_cname(arguments);
 else if (cmd == 'reorder') snd_reorder(arguments);
+else if (cmd == 'eval1c') snd_eval1c(arguments);
 else throw Error("ERROR: unknown command " + cmd);
