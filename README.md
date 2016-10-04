@@ -36,20 +36,31 @@ including [FANN][fann] and [genann][genann].
 
 ### <a name="motiv"></a>Motivations
 
+While we can easily implement a vanilla FNN with most deep learning libraries,
+we usually have to carry a chain of heavy dependencies required by these
+libraries. This hurts portability and enduser experiences of our tools, when
+all we need is a simple FNN. The [FANN][fann] library, a standalone C library
+for FNN, addresses this issue to a certain extent. However, this library has
+not implemented recent advances in the field of deep learning. On large data
+sets, it appears to be much slower than deep learning libraries implementing
+the same network. A portable and efficient C library for standard FNN is still
+missing. The SANN library aims to fill this gap.
+
 ### <a name="feat"></a>Features
 
  * Efficient. Time-consuming inner loops are optimized to reduce cache misses
-   and are vectorized with SSE. Little room for further speedup with CPU only.
+   and are vectorized with SSE. Performance comparable to FNNs implemented with
+   sophisticated deep learning libraries.
 
- * Portable. Written in C and compatible with C++ compilers. Use only standard
-   Linux libraries.
+ * Portable. Written in C only and compatible with C++ compilers. Use only
+   standard Linux libraries.
 
 ### <a name="limit"></a>Limitations
 
  * No [convolutional neural network][cnn] (CNN) or [recurrent neural
    network][rnn] (RNN). No [Batch Normalization][bn] (a recent technique to
-   improve training). Not supporting CUDA. As such, SANN is *NOT* a [deep
-   learning][dp] library.
+   improve training). Not supporting CUDA. No [automatic differentiation][ad].
+   As such, SANN is *NOT* a [deep learning][dp] library.
 
  * Not foolproof. Users need to manually tune hyper-parameters, in particular
    the learning rate.
@@ -225,3 +236,4 @@ SANN also comes with the following side recipes:
 [sigm]: https://en.wikipedia.org/wiki/Sigmoid_function
 [ce-cost]: https://en.wikipedia.org/wiki/Cross_entropy#Cross-entropy_error_function_and_logistic_regression
 [dp]: https://en.wikipedia.org/wiki/Deep_learning
+[ad]: https://en.wikipedia.org/wiki/Automatic_differentiation
