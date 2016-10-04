@@ -12,6 +12,7 @@ mnist/eval.pl test-y.snd.gz test-out.snd
 
 - [Getting Started](#started)
 - [Introduction](#intro)
+  - [Motivations](#motiv)
   - [Features](#feat)
   - [Limitations](#limit)
 - [Guide to the Command-Line Tool](#cli)
@@ -37,14 +38,21 @@ including [FANN][fann] and [genann][genann].
 ### <a name="motiv"></a>Motivations
 
 While we can easily implement a vanilla FNN with most deep learning libraries,
-we usually have to carry a chain of heavy dependencies required by these
-libraries. This hurts portability and enduser experiences of our tools, when
-all we need is a simple FNN. The [FANN][fann] library, a standalone C library
-for FNN, addresses this issue to a certain extent. However, this library has
-not implemented recent advances in the field of deep learning. On large data
-sets, it appears to be much slower than deep learning libraries implementing
-the same network. A portable and efficient C library for standard FNN is still
-missing. The SANN library aims to fill this gap.
+we usually have to carry the heavy dependencies required by these libraries.
+This hurts portability and enduser experiences of our tools, when all we need
+is a simple FNN. The [FANN][fann] library, a standalone C library for FNN,
+addresses this issue to a certain extent. However, this library has not
+implemented recent advances in the field of deep learning. On large data sets,
+it appears to be much slower than deep learning libraries for the same model.
+A portable and efficient C library for standard FNN is still missing. The SANN
+library aims to fill this gap.
+
+In addition, many deep learning libraries do not provide convenient
+command-line interfaces (CLI). Even deploying the simplest model requires
+familiarity with the language and the API the library uses. SANN provides a
+convenient CLI for most typical use cases. Users do not need to know C
+to deploy a model, as long as they can convert data into the [format required
+by SANN](#snd).
 
 ### <a name="feat"></a>Features
 
