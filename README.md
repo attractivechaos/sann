@@ -2,9 +2,9 @@
 ```sh
 git clone http://github.com/attractivechaos/sann
 cd sann && make all demo
-wget -O- URL-to-mnist-data | tar xf -
+wget -O- https://github.com/attractivechaos/sann/releases/download/data/mnist-snd.tar | tar xf -
 ./sann train -o mnist-mln.snm train-x.snd.gz train-y.snd.gz
-./sann test mnist-mln.snm test-x.snd.gz > test-out.snd
+./sann apply mnist-mln.snm test-x.snd.gz > test-out.snd
 mnist/eval.pl test-y.snd.gz test-out.snd
 ```
 
